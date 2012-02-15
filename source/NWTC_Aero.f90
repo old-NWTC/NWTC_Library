@@ -6,17 +6,11 @@ MODULE NWTC_Aero
 
    ! It contains the following routines:
 
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
-!v1.03.00a-mlb   !     SUBROUTINE AeroInt  ( ISeg, Alpha, Re, AF_Table, IntData, DoCl, DoCd, DoCm [, ErrStat] )
    !     SUBROUTINE AeroInt  ( ISeg, Alpha, Re, AF_Table, IntData, DoCl, DoCd, DoCm, DoCpmin [, ErrStat] )
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    !     SUBROUTINE CompDR   ( NumSeg, RLoc, HubRad, RotorRad, DimenInp, DelRLoc [, ErrStat] )
    !     SUBROUTINE GetAF    ( AF_File, AF_Table, ISeg )
    !     FUNCTION   GetCoef  ( ISeg, Alpha, AlfaTab, CoefTab, NumRows, Ind [, ErrStat] )
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
-!v1.03.00a-mlb   !     SUBROUTINE GetCoefs ( ISeg, Alpha, Re, AF_Table, ClInt, CdInt, CmInt, DoCl, DoCd, DoCm [, ErrStat] )
    !     SUBROUTINE GetCoefs ( ISeg, Alpha, Re, AF_Table, ClInt, CdInt, CmInt, CpminInt, DoCl, DoCd, DoCm, DoCpmin [, ErrStat] )
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    !     SUBROUTINE InterpAF ( Ratio, InTable1, InTable2, OutTable )
 
 
@@ -40,9 +34,7 @@ MODULE NWTC_Aero
       REAL(ReKi)                   :: Cl                                        ! The lift coefficient.
       REAL(ReKi)                   :: Cd                                        ! The drag coefficient.
       REAL(ReKi)                   :: Cm                                        ! The pitching-moment coefficient.
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
       REAL(ReKi)                   :: Cpmin                                     ! The minimum pressure coefficient.
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
       REAL(ReKi)                   :: FTB                                       ! The normal-coefficient divided by the Cn slope at zero lift.
       REAL(ReKi)                   :: FTBC                                      ! The chordwise-coefficient divided by the Cn slope at zero lift.
    ENDTYPE AeroData
@@ -56,18 +48,14 @@ MODULE NWTC_Aero
       REAL(ReKi)                   :: CnS                                       ! The Cn at stall value for positive AoA.
       REAL(ReKi)                   :: CnSL                                      ! Cn at stall value for negative AoA.
       REAL(ReKi)                   :: Re                                        ! The Re for this table.
-!Start of proposed change.  v1.03.00a-mlb, 01-May-2010,  M. Buhl
       REAL(ReKi)                   :: Ctrl                                      ! The control setting for this table.
-!End of proposed change.  v1.03.00a-mlb, 01-May-2010,  M. Buhl
       INTEGER                      :: Ind      = 0                              ! Last-used index into table.  Zero at beginning.
       INTEGER                      :: NumAlf                                    ! Number of angles of attack in the table.
       REAL(ReKi), ALLOCATABLE      :: Alpha    (:)                              ! The angle of attack vector.
       REAL(ReKi), ALLOCATABLE      :: Cl       (:)                              ! The lift-coefficient vector.
       REAL(ReKi), ALLOCATABLE      :: Cd       (:)                              ! The drag-coefficient vector.
       REAL(ReKi), ALLOCATABLE      :: Cm       (:)                              ! The pitching-moment-coefficient vector.
-!Start of proposed change.  v1.03.00a-mlb, 01-May-2010,  M. Buhl
       REAL(ReKi), ALLOCATABLE      :: Cpmin    (:)                              ! The minimum-pressure-coefficient vector.
-!End of proposed change.  v1.03.00a-mlb, 01-May-2010,  M. Buhl
       REAL(ReKi), ALLOCATABLE      :: FTB      (:)                              ! The normal-coefficient divided by the Cn slope at zero lift.
       REAL(ReKi), ALLOCATABLE      :: FTBC     (:)                              ! The chordwise-coefficient divided by the Cn slope at zero lift.
    ENDTYPE AeroTable
@@ -83,20 +71,14 @@ MODULE NWTC_Aero
       TYPE(AeroTable), ALLOCATABLE :: Tab      (:)                              ! The tables in this supertable.
    ENDTYPE ElmTable
 
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
-!v1.03.00a-mlb   LOGICAL                         :: UseCm                                     ! Flag to tell if there are Cm data in the airfoil files.
    LOGICAL                         :: UseCm    = .FALSE.                        ! Flag to tell if there are Cm data in the airfoil files.
    LOGICAL                         :: UseCpmin = .FALSE.                        ! Flag to tell if there are Cp,min data in the airfoil files.
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
 
 CONTAINS
 
 !=======================================================================
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
-!v1.03.00a-mlb   SUBROUTINE AeroInt ( ISeg, Alpha, Re, AF_Table, IntData, DoCl, DoCd, DoCm, ErrStat )
    SUBROUTINE AeroInt ( ISeg, Alpha, Re, AF_Table, IntData, DoCl, DoCd, DoCm, DoCpmin, ErrStat )
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
       ! This routine finds the Re-bounding tables and then calls GetCoef() to get the
       ! desired coefficients for the two tables and then interpolates between them.
@@ -114,9 +96,7 @@ CONTAINS
    LOGICAL, INTENT(IN)               :: DoCd                                    ! Get Cd.
    LOGICAL, INTENT(IN)               :: DoCl                                    ! Get Cl.
    LOGICAL, INTENT(IN)               :: DoCm                                    ! Get Cm.
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    LOGICAL, INTENT(IN)               :: DoCpmin                                 ! Get Cp,min.
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
    TYPE (ElmTable), INTENT(INOUT)    :: AF_Table                                ! The table of airfoil data for the current segment.
    TYPE (AeroData), INTENT(OUT)      :: IntData                                 ! The interpolated airfoil data for the current segment.
@@ -127,9 +107,7 @@ CONTAINS
    REAL(ReKi)                        :: CdHi                                    ! The drag coefficient for the higher Re.
    REAL(ReKi)                        :: ClHi                                    ! The lift coefficient for the higher Re.
    REAL(ReKi)                        :: CmHi                                    ! The pitching-moment coefficient for the higher Re.
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    REAL(ReKi)                        :: CpminHi                                 ! The minimum pressure coefficient for the higher Re.
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    REAL(ReKi)                        :: Fract                                   ! The fractional distance between tables.
 
    INTEGER                           :: ITab                                    ! An index for table number.
@@ -198,7 +176,6 @@ CONTAINS
                              , AF_Table%Tab(ITabLo)%Ind )
       END IF
    END IF
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
    IF ( DoCpmin )  THEN
       IF ( PRESENT( ErrStat ) ) THEN
@@ -210,7 +187,6 @@ CONTAINS
                                 , AF_Table%Tab(ITabLo)%Ind )
       END IF
    END IF
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
    IntData%AlfaStal = AF_Table%Tab(ITabLo)%AlfaStal
    IntData%AOD      = AF_Table%Tab(ITabLo)%AOD
@@ -267,7 +243,6 @@ CONTAINS
       IntData%Cm = IntData%Cm + Fract*( CmHi - IntData%Cm )
    END IF
 
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    IF ( DoCpmin )  THEN
       IF ( PRESENT( ErrStat ) ) THEN
          CpminHi = GetCoef( ISeg, Alpha, AF_Table%Tab(ITabHi)%Alpha, AF_Table%Tab(ITabHi)%Cpmin, AF_Table%Tab(ITabHi)%NumAlf, &
@@ -280,7 +255,6 @@ CONTAINS
       IntData%Cpmin = IntData%Cpmin + Fract*( CpminHi - IntData%Cpmin )
    END IF
 
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    IntData%AlfaStal = IntData%AlfaStal + Fract*( AF_Table%Tab(ITabHi)%AlfaStal - IntData%AlfaStal )
    IntData%AOD      = IntData%AOD      + Fract*( AF_Table%Tab(ITabHi)%AOD      - IntData%AOD      )
    IntData%AOL      = IntData%AOL      + Fract*( AF_Table%Tab(ITabHi)%AOL      - IntData%AOL      )
@@ -417,10 +391,7 @@ CONTAINS
 !      TYPE(DataRowO), POINTER      :: Next            => NULL()
 !   ENDTYPE DataRowO
 
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
-!v1.03.00a-mlb   REAL(ReKi)                      :: AF_Data   (4)                             ! The values from one line of airfol data.
    REAL(ReKi)                      :: AF_Data   (5)                             ! The values from one line of airfol data.
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    REAL(ReKi), ALLOCATABLE         :: AF_DataO  (:)                             ! The values from one line of airfol data.
    REAL(ReKi), ALLOCATABLE         :: RnAry     (:)                             ! The temporary array for Re.
    REAL(ReKi), ALLOCATABLE         :: ASAry     (:)                             ! The temporary array for Stall AoA.
@@ -489,7 +460,6 @@ CONTAINS
          NumVals = 3
       END IF
 
-! Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
          ! Are we expecting Cp,min data in the file?  Allocate the temporary data array.
 
@@ -497,7 +467,6 @@ CONTAINS
          NumVals = NumVals + 1
       END IF
 
-! End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
          ! Allocate the AF_Table of pointers for this element.
 
@@ -517,10 +486,8 @@ CONTAINS
 
          CALL ReadRVar ( UnAF, AF_File, AF_Table%Tab(ITab)%Re      , 'Re('      //TRIM( Int2LStr( ITab ) )//')'   &
                                                                    , 'Reynolds number for this airfoil table.'    )
-! Start of proposed change.  v1.03.00a-mlb, 01-May-2010,  M. Buhl
          CALL ReadRVar ( UnAF, AF_File, AF_Table%Tab(ITab)%Ctrl    , 'Ctrl('    //TRIM( Int2LStr( ITab ) )//')'   &
                                                                    , 'Control setting for this airfoil table.'    )
-! End of proposed change.  v1.03.00a-mlb, 01-May-2010,  M. Buhl
          CALL ReadRVar ( UnAF, AF_File, AF_Table%Tab(ITab)%AlfaStal, 'AlfaStal('//TRIM( Int2LStr( ITab ) )//')'   &
                                                                    , 'stall AoA for this airfoil table.'          )
          CALL ReadRVar ( UnAF, AF_File, AF_Table%Tab(ITab)%AOL     , 'AOL('     //TRIM( Int2LStr( ITab ) )//')'   &
@@ -603,7 +570,6 @@ CONTAINS
                        //' and table #'//TRIM( Int2LStr( ITab) )//').' )
             END IF
          END IF
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
          IF ( UseCpmin )  THEN
             ALLOCATE ( AF_Table%Tab(ITab)%Cpmin(AF_Table%Tab(ITab)%NumAlf) , STAT=Sttus )
@@ -612,7 +578,6 @@ CONTAINS
                        //' and table #'//TRIM( Int2LStr( ITab) )//').' )
             END IF
          END IF
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
          ALLOCATE ( AF_Table%Tab(ITab)%FTB(AF_Table%Tab(ITab)%NumAlf) , STAT=Sttus )
          IF ( Sttus /= 0 )  THEN
@@ -660,12 +625,10 @@ CONTAINS
             IF ( UseCm )  THEN
                AF_Table%Tab(ITab)%Cm(IAlf) = AF_Data(4)
             END IF
-! Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
             IF ( UseCpmin )  THEN
                AF_Table%Tab(ITab)%Cpmin(IAlf) = AF_Data(NumVals)
             END IF
-! End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
          END DO ! IAlf
 
@@ -818,17 +781,6 @@ CONTAINS
                           //' for element #'//TRIM( Int2LStr( ISeg) )//'.' )
             END IF
          END IF
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
-! I propose we don't add Cp,min to the old-style files.
-!
-!         IF ( UseCpmin )  THEN
-!            ALLOCATE ( AF_Table%Tab(ITab)%Cpmin(NumAlf) , STAT=Sttus )
-!            IF ( Sttus /= 0 )  THEN
-!               CALL ProgAbort ( ' Error allocating memory for the Cpmin vector of airfoil table #'//TRIM( Int2LStr( ITab) ) &
-!                          //' for element #'//TRIM( Int2LStr( ISeg) )//'.' )
-!            END IF
-!         END IF
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
 !         ALLOCATE ( AF_Table%Tab(ITab)%FTB(AF_Table%Tab(ITab)%NumAlf) , STAT=Sttus )
          ALLOCATE ( AF_Table%Tab(ITab)%FTB(NumAlf) , STAT=Sttus )
@@ -1005,10 +957,7 @@ CONTAINS
    RETURN
    END FUNCTION GetCoef ! ( ISeg, Alpha, AlfaTab, CoefTab, NumRows, Ind )
 !=======================================================================
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
-!v1.03.00a-mlb   SUBROUTINE GetCoefs ( ISeg, Alpha, Re, AF_Table, ClInt, CdInt, CmInt, DoCl, DoCd, DoCm, ErrStat )
    SUBROUTINE GetCoefs ( ISeg, Alpha, Re, AF_Table, ClInt, CdInt, CmInt, CpminInt, DoCl, DoCd, DoCm, DoCpmin, ErrStat )
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
 
       ! This routine finds the Re-bounding tables and then calls GetCoef() to get the
@@ -1025,17 +974,13 @@ CONTAINS
    LOGICAL, INTENT(IN)               :: DoCd                                    ! Get Cd.
    LOGICAL, INTENT(IN)               :: DoCl                                    ! Get Cl.
    LOGICAL, INTENT(IN)               :: DoCm                                    ! Get Cm.
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    LOGICAL, INTENT(IN)               :: DoCpmin                                 ! Get Cp,min.
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
    REAL(ReKi), INTENT(IN)            :: Alpha                                   ! Angle of attack to get the coefficient for.
    REAL(ReKi), INTENT(OUT)           :: CdInt                                   ! Interpolated drag coefficient.
    REAL(ReKi), INTENT(OUT)           :: ClInt                                   ! Interpolated lift coefficient.
    REAL(ReKi), INTENT(OUT)           :: CmInt                                   ! Interpolated pitching-moment coefficient.
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    REAL(ReKi), INTENT(OUT)           :: CpminInt                                ! Interpolated minimum-pressure coefficient.
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    REAL(ReKi), INTENT(IN)            :: Re                                      ! Reynolds number.
 
 
@@ -1044,9 +989,7 @@ CONTAINS
    REAL(ReKi)                        :: CdHi                                    ! The drag coefficient for the higher Re.
    REAL(ReKi)                        :: ClHi                                    ! The lift coefficient for the higher Re.
    REAL(ReKi)                        :: CmHi                                    ! The pitching-moment coefficient for the higher Re.
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    REAL(ReKi)                        :: CpminHi                                 ! The minimum-pressure coefficient for the higher Re.
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
    REAL(ReKi)                        :: Fract                                   ! The fractional distance between tables.
 
    INTEGER                           :: ITab                                    ! An index for table number.
@@ -1103,14 +1046,12 @@ CONTAINS
                                        AF_Table%Tab(ITabLo)%Ind, ErrStat )
          IF (ErrStat > 0) RETURN
       END IF
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
       IF ( DoCpmin )  THEN
          CpminInt = GetCoef( ISeg, Alpha, AF_Table%Tab(ITabLo)%Alpha, AF_Table%Tab(ITabLo)%Cpmin, AF_Table%Tab(ITabLo)%NumAlf, &
                                           AF_Table%Tab(ITabLo)%Ind, ErrStat )
          IF (ErrStat > 0) RETURN
       END IF
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
    ELSE  ! Abort the program when errors are found
 
@@ -1128,13 +1069,11 @@ CONTAINS
          CmInt = GetCoef( ISeg, Alpha, AF_Table%Tab(ITabLo)%Alpha, AF_Table%Tab(ITabLo)%Cm, AF_Table%Tab(ITabLo)%NumAlf, &
                                        AF_Table%Tab(ITabLo)%Ind )
       END IF
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
       IF ( DoCpmin )  THEN
          CpminInt = GetCoef( ISeg, Alpha, AF_Table%Tab(ITabLo)%Alpha, AF_Table%Tab(ITabLo)%Cpmin, AF_Table%Tab(ITabLo)%NumAlf, &
                                           AF_Table%Tab(ITabLo)%Ind )
       END IF
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
    END IF
 
@@ -1183,7 +1122,6 @@ CONTAINS
       END IF
       CmInt = CmInt + Fract*( CmHi - CmInt )
    END IF
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
    IF ( DoCpmin )  THEN
       IF ( PRESENT(ErrStat) ) THEN
@@ -1196,14 +1134,10 @@ CONTAINS
       END IF
       CpminInt = CmInt + Fract*( CmHi - CmInt )
    END IF
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 
 
    RETURN
-!Start of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
-!v1.03.00a-mlb   END SUBROUTINE GetCoefs ! ( ISeg, Alpha, Re, AF_Table, ClInt, CdInt, CmInt )
    END SUBROUTINE GetCoefs ! ( ISeg, Alpha, Re, AF_Table, ClInt, CdInt, CmInt, CpminInt, DoCl, DoCd, DoCm, DoCpmin, ErrStat )
-!End of proposed change.  v1.03.00a-mlb, 10-Apr-2010,  M. Buhl
 !=======================================================================
    SUBROUTINE InterpAF !( Ratio, InTable1, InTable2, OutTable )
 

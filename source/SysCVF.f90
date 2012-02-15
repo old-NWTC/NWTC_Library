@@ -827,7 +827,11 @@ CONTAINS
 
    ENDDO
 
-   WRITE (CU,Frm)  TRIM( ADJUSTL( Str(Beg:Beg+LStr-1) ) )
+   IF ( LStr > 0 ) THEN
+      WRITE (CU,Frm)  TRIM( ADJUSTL( Str(Beg:Beg+LStr-1) ) )
+   ELSE
+      WRITE (CU,'()')
+   END IF      
 
 
    RETURN

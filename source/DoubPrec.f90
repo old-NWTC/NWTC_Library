@@ -15,6 +15,7 @@ IMPLICIT                           NONE
 !INTEGER, PARAMETER              :: B8Ki     =  8                                ! Default kind for eight-byte numbers.
 !INTEGER, PARAMETER              :: DbKi     =  8                                ! Default kind for double-precision, floating-point numbers.
 !INTEGER, PARAMETER              :: QuKi     = 16                                ! Kind for 16-byte, floating-point numbers.
+!INTEGER, PARAMETER              :: R8Ki     =  8                                ! Default kind for eight-byte floating-point numbers.
 !INTEGER, PARAMETER              :: ReKi     =  8                                ! Default kind for floating-point numbers.
 !INTEGER, PARAMETER              :: SiKi     =  4                                ! Kind for four-byte, floating-point numbers.
 
@@ -23,10 +24,9 @@ INTEGER, PARAMETER              :: B2Ki     = SELECTED_INT_KIND(  4 )           
 INTEGER, PARAMETER              :: B4Ki     = SELECTED_INT_KIND(  9 )           ! Default kind for four-byte numbers.
 INTEGER, PARAMETER              :: B8Ki     = SELECTED_INT_KIND( 18 )           ! Default kind for eight-byte numbers.
 
-!bjj: for programs like Adams that specify "double" in subroutine arguments, DbKi, should be set to ReKi here....
-!We need something that is 8-byte for both SingPrec.f90 and DoubPrec.f90
 INTEGER, PARAMETER              :: DbKi     = SELECTED_REAL_KIND( 20, 500 )     ! Default kind for double-precision, floating-point numbers.
 INTEGER, PARAMETER              :: QuKi     = SELECTED_REAL_KIND( 20, 500 )     ! Kind for 16-byte, floating-point numbers.
+INTEGER, PARAMETER              :: R8Ki     = SELECTED_REAL_KIND( 14, 300 )     ! Default kind for eight-byte floating-point numbers.
 INTEGER, PARAMETER              :: ReKi     = SELECTED_REAL_KIND( 14, 300 )     ! Default kind for floating-point numbers.
 INTEGER, PARAMETER              :: SiKi     = SELECTED_REAL_KIND(  6,  30 )     ! Kind for four-byte, floating-point numbers.
 
