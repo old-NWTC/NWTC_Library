@@ -319,7 +319,7 @@ CONTAINS
          ! START v1.03.00b-dcm  21-Jun-2010  D. Maniaci
          CALL WrScr1('Your analysis nodes are incorrectly defined.  Please review the following forum topic for an explaination' &
                     //' of this error:')
-         CALL WrScr1('  https://wind.nrel.gov/forum/wind/viewtopic.php?f=4&t=241')   
+         CALL WrScr1('  https://wind.nrel.gov/forum/wind/viewtopic.php?f=4&t=241')
          ! END v1.03.00b-dcm  21-Jun-2010  D. Maniaci
          CALL ProgAbort ( ' The radius for blade segment #'//Trim( Int2LStr( ISeg ) )//' is too far inboard for a physically' &
                     //' realizable blade.  It must be greater than '//Trim( Flt2LStr( SegBeg/ErrFact ) )//'.', PRESENT(ErrStat) )
@@ -341,7 +341,7 @@ CONTAINS
          ! START v1.03.00b-dcm  21-Jun-2010  D. Maniaci
          CALL WrScr1('Your analysis nodes are incorrectly defined.  Please review the following forum topic for an explaination' &
                     //' of this error:')
-         CALL WrScr1('  https://wind.nrel.gov/forum/wind/viewtopic.php?f=4&t=241')   
+         CALL WrScr1('  https://wind.nrel.gov/forum/wind/viewtopic.php?f=4&t=241')
          ! END v1.03.00b-dcm  21-Jun-2010  D. Maniaci
          CALL ProgAbort ( ' The sum of the lengths of the blade segments does not match the rotor radius.  The segments add up' &
                     //' to a rotor radius of '//Trim( Flt2LStr( CompRad ) )//' instead of the specified radius of ' &
@@ -353,8 +353,8 @@ CONTAINS
          ! START v1.03.00b-dcm  21-Jun-2010  D. Maniaci
          CALL WrScr1('Your analysis nodes are incorrectly defined.  Please review the following forum topic for an explaination' &
                     //' of this error:')
-         CALL WrScr1('  https://wind.nrel.gov/forum/wind/viewtopic.php?f=4&t=241')  
-         ! END v1.03.00b-dcm  21-Jun-2010  D. Maniaci  
+         CALL WrScr1('  https://wind.nrel.gov/forum/wind/viewtopic.php?f=4&t=241')
+         ! END v1.03.00b-dcm  21-Jun-2010  D. Maniaci
          CALL WrScr1 ( ' The sum of the lengths of the blade segments does not match the rotor radius.  The segments add up to a' &
                     //' rotor radius of '//Trim( Flt2LStr( CompRad ) )//' instead of the specified radius of ' &
                     //Trim( Flt2LStr( RotorRad ) )//'.  They really should agree within 0.1%, but I''ll let you slide.' )
@@ -1132,7 +1132,7 @@ CONTAINS
          CpminHi = GetCoef( ISeg, Alpha, AF_Table%Tab(ITabHi)%Alpha, AF_Table%Tab(ITabHi)%Cpmin, AF_Table%Tab(ITabHi)%NumAlf, &
                                           AF_Table%Tab(ITabHi)%Ind )
       END IF
-      CpminInt = CmInt + Fract*( CmHi - CmInt )
+      CpminInt = CpminInt + Fract*( CpminHi - CpminInt )
    END IF
 
 
