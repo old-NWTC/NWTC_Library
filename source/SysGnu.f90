@@ -569,6 +569,22 @@ CONTAINS
    RETURN
    END SUBROUTINE OpenBinInpFile
 !=======================================================================
+ SUBROUTINE OpenCon
+
+
+      ! This routine opens the console for standard output.
+
+
+
+!mlb_20-Jun-2011   OPEN ( CU , FILE='CON' , STATUS='UNKNOWN' , RECL=ConRecL )
+   OPEN ( CU , FILE='CONOUT$' , STATUS='UNKNOWN' , RECL=ConRecL )
+
+   CALL FlushOut ( CU )
+
+
+   RETURN
+   END SUBROUTINE OpenCon
+!=======================================================================
    SUBROUTINE OpenUnfInpBEFile ( Un, InFile, RecLen, Error )
 
 
@@ -616,23 +632,7 @@ CONTAINS
 
    RETURN
    END SUBROUTINE OpenUnfInpBEFile
-!=======================================================================
-   SUBROUTINE OpenCon
-
-
-      ! This routine opens the console for standard output.
-
-
-
-!mlb_20-Jun-2011   OPEN ( CU , FILE='CON' , STATUS='UNKNOWN' , RECL=ConRecL )
-   OPEN ( CU , FILE='CONOUT$' , STATUS='UNKNOWN' , RECL=ConRecL )
-
-   CALL FlushOut ( CU )
-
-
-   RETURN
-   END SUBROUTINE OpenCon
-!=======================================================================
+!=======================================================================  
    SUBROUTINE ProgExit ( StatCode )
 
 
@@ -768,8 +768,8 @@ CONTAINS
 
    MaxLen = 98
    Indent = LEN_TRIM( Str ) - LEN_TRIM( ADJUSTL( Str ) )
+   Indent = MIN( Indent, MaxLen-2 )                                              ! at least 2 characters per line
    MaxLen = MaxLen - Indent
-   Frm    = '(1X,  X,A)'
 
    IF ( Indent > 0 )  THEN
       Frm    = '(1X,  X,A)'

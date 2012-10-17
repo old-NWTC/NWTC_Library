@@ -11,11 +11,12 @@ MODULE NWTC_Aero
    !     SUBROUTINE GetAF    ( AF_File, AF_Table, ISeg )
    !     FUNCTION   GetCoef  ( ISeg, Alpha, AlfaTab, CoefTab, NumRows, Ind [, ErrStat] )
    !     SUBROUTINE GetCoefs ( ISeg, Alpha, Re, AF_Table, ClInt, CdInt, CmInt, CpminInt, DoCl, DoCd, DoCm, DoCpmin [, ErrStat] )
-   !     SUBROUTINE InterpAF ( Ratio, InTable1, InTable2, OutTable )
 
 
    USE                             NWTC_IO
    USE                             NWTC_Num
+   
+   IMPLICIT  NONE
 
 
 !=======================================================================
@@ -322,7 +323,7 @@ CONTAINS
          CALL WrScr1('  https://wind.nrel.gov/forum/wind/viewtopic.php?f=4&t=241')
          ! END v1.03.00b-dcm  21-Jun-2010  D. Maniaci
          CALL ProgAbort ( ' The radius for blade segment #'//Trim( Int2LStr( ISeg ) )//' is too far inboard for a physically' &
-                    //' realizable blade.  It must be greater than '//Trim( Flt2LStr( SegBeg/ErrFact ) )//'.', PRESENT(ErrStat) )
+                    //' realizable blade.  It must be greater than '//Trim( Num2LStr( SegBeg/ErrFact ) )//'.', PRESENT(ErrStat) )
          IF ( PRESENT(ErrStat) ) ErrStat = 1
          RETURN
       END IF
@@ -344,8 +345,8 @@ CONTAINS
          CALL WrScr1('  https://wind.nrel.gov/forum/wind/viewtopic.php?f=4&t=241')
          ! END v1.03.00b-dcm  21-Jun-2010  D. Maniaci
          CALL ProgAbort ( ' The sum of the lengths of the blade segments does not match the rotor radius.  The segments add up' &
-                    //' to a rotor radius of '//Trim( Flt2LStr( CompRad ) )//' instead of the specified radius of ' &
-                    //Trim( Flt2LStr( RotorRad ) )//'.  They must agree within 0.5%', PRESENT(ErrStat) )
+                    //' to a rotor radius of '//Trim( Num2LStr( CompRad ) )//' instead of the specified radius of ' &
+                    //Trim( Num2LStr( RotorRad ) )//'.  They must agree within 0.5%', PRESENT(ErrStat) )
          IF ( PRESENT(ErrStat) ) ErrStat = 1
          RETURN
    ELSE IF ( ABS( CompRad - RotorRad )/RotorRad > 0.001 )  THEN
@@ -356,8 +357,8 @@ CONTAINS
          CALL WrScr1('  https://wind.nrel.gov/forum/wind/viewtopic.php?f=4&t=241')
          ! END v1.03.00b-dcm  21-Jun-2010  D. Maniaci
          CALL WrScr1 ( ' The sum of the lengths of the blade segments does not match the rotor radius.  The segments add up to a' &
-                    //' rotor radius of '//Trim( Flt2LStr( CompRad ) )//' instead of the specified radius of ' &
-                    //Trim( Flt2LStr( RotorRad ) )//'.  They really should agree within 0.1%, but I''ll let you slide.' )
+                    //' rotor radius of '//Trim( Num2LStr( CompRad ) )//' instead of the specified radius of ' &
+                    //Trim( Num2LStr( RotorRad ) )//'.  They really should agree within 0.1%, but I''ll let you slide.' )
 !      IF ( Beep ) &
          CALL UsrAlarm
    END IF
@@ -936,9 +937,9 @@ CONTAINS
 
    IF ( ( Alpha < AlfaTab(1) ) .OR. ( AlfaTab(NumRows) < Alpha ) )  THEN
 
-      CALL ProgAbort ( ' For segment '//TRIM( Int2LStr( ISeg ) )//', the current angle of attack ('//TRIM( Flt2LStr( Alpha ) ) &
-                 //' degrees) is outside the domain of your data table (' //TRIM( Flt2LStr( AlfaTab(1) ) )//' to ' &
-                 //TRIM( Flt2LStr( AlfaTab(NumRows) ) )//' degrees).  Please extend your data table.', PRESENT(ErrStat) )
+      CALL ProgAbort ( ' For segment '//TRIM( Int2LStr( ISeg ) )//', the current angle of attack ('//TRIM( Num2LStr( Alpha ) ) &
+                 //' degrees) is outside the domain of your data table (' //TRIM( Num2LStr( AlfaTab(1) ) )//' to ' &
+                 //TRIM( Num2LStr( AlfaTab(NumRows) ) )//' degrees).  Please extend your data table.', PRESENT(ErrStat) )
       IF ( PRESENT(ErrStat) ) ErrStat = 1
       RETURN
 
@@ -1138,87 +1139,6 @@ CONTAINS
 
    RETURN
    END SUBROUTINE GetCoefs ! ( ISeg, Alpha, Re, AF_Table, ClInt, CdInt, CmInt, CpminInt, DoCl, DoCd, DoCm, DoCpmin, ErrStat )
-!=======================================================================
-   SUBROUTINE InterpAF !( Ratio, InTable1, InTable2, OutTable )
-
-
-      ! This routine interpolates airfoil tables.  It generates interpolated tables for all Re that occur in either of the input
-      ! tables and data for all angles of attack that occur in any of the tables.
-
-      ! For now, we'll take the easy route and just copy the airfoil table that is nearest the analysis node.
-
-
-!      ! Argument declarations.
-!
-!   REAL(ReKi), INTENT(IN)       :: Ratio                                        ! (x-x1)/(x2-x1).
-!
-!   TYPE(ElmTable), INTENT(IN)   :: InTable1                                     ! The input airfoil set for the lower bound.
-!   TYPE(ElmTable), INTENT(IN)   :: InTable2                                     ! The input airfoil set for the upper bound.
-!   TYPE(ElmTable), INTENT(OUT)  :: OutTable                                     ! The out airfoil set.
-!
-!
-!      ! Local declarations.
-!
-!   REAL(ReKi), ALLOCATABLE      :: Alfas  (:)                                   ! The union of the alphas from all input tables.
-!   REAL(ReKi), ALLOCATABLE      :: Re     (:)                                   ! The union of the Re from both input tables.
-!   REAL(ReKi), ALLOCATABLE      :: TmpAry1(:)                                   ! A temporary array to hold the Re's from the first table.
-!   REAL(ReKi), ALLOCATABLE      :: TmpAry2(:)                                   ! A temporary array to hold the Re's from the second table.
-!
-!   INTEGER                      :: IT1                                          ! The index for table 1.
-!   INTEGER                      :: IT2                                          ! The index for table 2.
-!   INTEGER                      :: NumRe                                        ! The number of unique Reynolds numbers between the two tables.
-!   INTEGER                      :: Sttus                                        ! The status returned from an allocation attempt.
-!
-!
-!
-!      ! Store the Reynolds Numbers for the two tables in temporary arrays.
-!
-!   ALLOCATE ( TmpAry1( InTable1%NumTabs ) , STAT=Sttus )
-!   IF ( Sttus /= 0 )  THEN
-!      CALL ProgAbort( ' Error allocating memory for TmpAry1 in InterpAF.' )
-!   END IF
-!
-!   ALLOCATE ( TmpAry2( InTable2%NumTabs ) , STAT=Sttus )
-!   IF ( Sttus /= 0 )  THEN
-!      CALL ProgAbort( ' Error allocating memory for TmpAry2 in InterpAF.' )
-!   END IF
-!
-!   DO IT1=1,InTable1%NumTabs
-!      TmpAry1(IT1) = InTable1%Tab(IT1)%Re
-!   END DO ! IT1
-!
-!   DO IT2=1,InTable2%NumTabs
-!      TmpAry2(IT1) = InTable2%Tab(IT1)%Re
-!   END DO ! IT2
-!
-!
-!      ! Allocate a temporary array and fill it with the union of the two input arrays.
-!
-!   ALLOCATE ( Re( InTable1%NumTabs + InTable2%NumTabs ) , STAT=Sttus )
-!   IF ( Sttus /= 0 )  THEN
-!      CALL ProgAbort( ' Error allocating memory for Re in InterpAF.' )
-!   END IF
-!
-!   CALL SortUnion ( TmpAry1, InTable1%NumTabs, TmpAry2, InTable2%NumTabs, Re, NumRe )
-!
-!
-!      ! Copy the temporary array into the final structure.  Release the old array.
-!
-!   ALLOCATE ( OutTable%Tab( NumRe ) , STAT=Sttus )
-!   IF ( Sttus /= 0 )  THEN
-!      CALL ProgAbort( ' Error allocating memory for OutTable%Tab in InterpAF.' )
-!   END IF
-!
-!   DO IRe=1,NumRe
-!
-!
-!
-!
-!      ! Find the union of all the alphas in all the tables.
-
-
-   RETURN
-   END SUBROUTINE InterpAF ! ( Ratio, InTable1, InTable2, OutTable )
 !=======================================================================
 
 END MODULE NWTC_Aero
