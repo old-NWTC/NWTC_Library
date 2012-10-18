@@ -4,7 +4,7 @@ MODULE SysSubs
    ! This module contains routines with system-specific logic and references.
    ! It also contains standard (but not system-specific) routines it uses.
 
-   ! SysGnu.f90 is specifically for the Gnu Fortran for Linux compiler.
+   ! SysGnu.f90 is specifically for the GNU Fortran (gfortran) compiler on Linux. This should also work for gfortran on MAC.
 
    ! 20110512, jm updated to use ACCESS='STREAM' for binary OPEN
    !           modified definition of char string UnfForm, below
@@ -576,8 +576,7 @@ CONTAINS
 
 
 
-!mlb_20-Jun-2011   OPEN ( CU , FILE='CON' , STATUS='UNKNOWN' , RECL=ConRecL )
-   OPEN ( CU , FILE='CONOUT$' , STATUS='UNKNOWN' , RECL=ConRecL )
+   OPEN ( CU , FILE='/dev/stdout' , STATUS='OLD' )
 
    CALL FlushOut ( CU )
 
@@ -632,7 +631,7 @@ CONTAINS
 
    RETURN
    END SUBROUTINE OpenUnfInpBEFile
-!=======================================================================  
+!=======================================================================
    SUBROUTINE ProgExit ( StatCode )
 
 
@@ -808,7 +807,7 @@ CONTAINS
       WRITE (CU,Frm)  TRIM( ADJUSTL( Str(Beg:Beg+LStr-1) ) )
    ELSE
       WRITE (CU,'()')
-   END IF      
+   END IF
 
 
    RETURN
