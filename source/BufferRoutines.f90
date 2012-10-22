@@ -1,4 +1,9 @@
 !**********************************************************************************************************************************
+! (c) 2012 National Renewable Energy Laboratory
+!
+! This file is used to compile the template module for the FAST modularization framework. We are currently making changes to the 
+! definitions of the pack/unpack routines, so expect this file to change or be replaced/removed. 
+!
 ! This file contains two subroutines to (1) place data from an array into a (presumably larger) array of bytes (buffer) and 
 ! (2) retrieve data in an array from an array of bytes (buffer). The subroutines are not placed in a module (or defined by an 
 ! interface) so that calling routines can declare the InData and OutData arrays of arbitrary types (reals, doubles, characters, 
