@@ -14,6 +14,8 @@ PROGRAM Test_ReadFASTbin
    INTEGER(IntKi)                      :: IO_Unit   = 1              ! The IO unit for the FAST binary file.
    INTEGER(IntKi)                      :: IRec                       ! The record index used for DO loops.
 
+   LOGICAL                             :: Error                      ! A flag returned by Get_Arg().
+
    CHARACTER(200)                      :: ErrMsg                     ! A possible error message returned by ReadFASTbin.
    CHARACTER( 21)                      :: Fmt                        ! The format specifier for the channel headings.
    CHARACTER(  4)                      :: OutExt    = 'outc'         ! The extension of the converted output file.
@@ -26,19 +28,25 @@ PROGRAM Test_ReadFASTbin
 
       ! Initialize the NWTC Library.
 
-   CALL NWTC_Init ( 'Test_ReadFASTbin', 'v1.00.00a-mlb' )
+   CALL NWTC_Init ( 'Test_ReadFASTbin', 'v1.01.00a-mlb, 10-Jan-2003' )
 
 
-      ! Specify the name of the FAST binary data file.
+      ! Get the name of the FAST binary data file.
 
-   RootName      = 'TestData\10min'
-   FASTdata%File = TRIM( RootName )//'.outb'
-   OutFile       = TRIM( RootName )//'.'//OutExt
+   CALL GET_COMMAND_ARGUMENT( 1, FASTdata%File, STATUS=ErrLev )
+
+   IF ( ErrLev > 0 )  THEN
+      CALL ProgAbort ( ' Syntax: Test_ReadFASTbin <input_file>' )
+   ENDIF
+
+   CALL GetRoot( FASTdata%File, RootName )
+
+   OutFile = TRIM( RootName )//'.'//OutExt
 
 
       ! Read the FAST binary file.
 
-   CALL ReadFASTbin ( IO_Unit, FASTdata, ErrLev, ErrMsg )
+   CALL ReadFASTbin ( IO_Unit, .FALSE., FASTdata, ErrLev, ErrMsg )
 
    IF ( ErrLev /= 0 )  THEN
       CALL ProgAbort ( TRIM( ErrMsg ) )
