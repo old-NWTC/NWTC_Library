@@ -4,7 +4,7 @@ PROGRAM Test_RegCubicSpline
       ! This program is used to test the routines to interpolate regularly spaced arrays using cubic splines.
 
 
-   USE                                    :: NWTC_Num_NewRout
+   USE                                    :: NWTC_Library
 
    IMPLICIT                                  NONE
 
