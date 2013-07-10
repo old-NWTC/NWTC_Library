@@ -52,7 +52,7 @@ NWTC_IO.o: SysGnuLinux.o
 NWTC_Library.o: NWTC_Num.o NWTC_IO.o ModMesh.o
 NWTC_Num.o: NWTC_IO.o
 SysGnuLinux.o: SingPrec.o
-ModMesh.o: SingPrec.o NWTC_IO.o ModMesh_Types.o
+ModMesh.o: SingPrec.o NWTC_Num.o ModMesh_Types.o
 
 ExampleModule.o : ModuleFluid_Types.o ModuleStructure_Types.o
 ModuleFluid_Types.o : ModuleFluid_Types.f90
