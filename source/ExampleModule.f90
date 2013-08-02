@@ -252,7 +252,7 @@ PROGRAM example
   INTEGER(IntKi), ALLOCATABLE, DIMENSION(:) :: IntBuf
   TYPE(MeshType) :: testmesh
 
-  mesh_debug = .TRUE.
+!  mesh_debug = .TRUE. !bjj removed here; please change the parameter in ModMesh_Types.f90 instead of setting this value here.
   CALL           Fluid_Init( Fld_InitData, Fld_InputGuess, Fld_ParamData, Fld_ContStates, Fld_DiscStates &
                             ,Fld_ConstrStateGuess, Fld_OtherStates, Fld_OutData                          &
                             ,Interval, ErrStat, ErrMess  )
