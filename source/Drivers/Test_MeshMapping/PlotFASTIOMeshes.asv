@@ -1,11 +1,11 @@
 function PlotFASTIOMeshes( Mesh1_Input, Mesh1_Output,Mesh2_Input,Mesh2_Output )
-%
+%%
 %
 Mesh1_I = ReadFASTmesh(Mesh1_Input);
 Mesh1_O = ReadFASTmesh(Mesh1_Output);
 Mesh2_I = ReadFASTmesh(Mesh2_Input);
-Mesh3_O = ReadFASTmesh(Mesh2_Output);
-
+Mesh2_O = ReadFASTmesh(Mesh2_Output);
+%%
 
 FieldNames = {'RefOrientation','Orientation','TranslationDisp',...
               'TranslationVel','RotationVel',...
@@ -14,32 +14,55 @@ FieldNames = {'RefOrientation','Orientation','TranslationDisp',...
  
 % npr = 2; %rows are values for each module:
 % npc = 3; % 1) Reference, 2) Loads, 3) Motions
-RefColor = [.001,.001,.001];
+RefColor     = [1,1,1]*.5;
+LoadsColor   = [0,.5,.5];
+MotionsColor = [.5,0,.5];
+
 ScaleSize = 0.5; %scaling factor for arrows on quiver plot
 
 f=figure;
 
-%% Plot Mod1 reference
-subplot(2,2,1) 
+%% Plot Mod1 Reference
+subplot(3,2,1) 
   hold on;  
   DrawMesh(Mesh1_O, RefColor, ScaleSize );   
-  setAxisValues('Mesh1 Reference'); 
+  setAxisValues('\bfMesh1 Reference'); 
  
-%% Plot Mod1 reference
-subplot(2,2,3)
+  
+%% Plot Mod1 Loads and Motions
+subplot(3,2,3)
     hold on;
-    MarkerColor = '
-    DrawMeshLoads(Mesh1_I, Mesh1_O, MarkerColor, ScaleSize )
+    DrawMesh(Mesh1_O, RefColor, ScaleSize );   
+    DrawMeshLoads(Mesh1_I, Mesh1_O, LoadsColor, ScaleSize )
+    setAxisValues('Mesh1: Calculated Inputs (Loads)'); 
   
 
-%% Plot Mod2 reference
-subplot(2,2,2) 
+subplot(3,2,5)
+    hold on;
+    DrawMesh(Mesh1_O, RefColor, ScaleSize );   
+    DrawMeshMotions(Mesh1_O, MotionsColor, ScaleSize )
+    setAxisValues('\bfMesh1: Outputs (Motions)'); 
+    
+    
+%% Plot Mod2 Reference
+subplot(3,2,2) 
   hold on;  
   DrawMesh(Mesh2_I, RefColor, ScaleSize );   
-  setAxisValues('Mesh2 Reference');    
+  setAxisValues('\bfMesh2 Reference');    
   
-%% 
+  
+%% Plot Mod2 Loads
+subplot(3,2,4)
+    hold on;
+    DrawMesh(Mesh2_I, RefColor, ScaleSize );   
+    DrawMeshLoads(Mesh2_O, Mesh2_I, LoadsColor, ScaleSize )
+    setAxisValues('\bfMesh2: Outputs (Loads)'); 
       
+subplot(3,2,6)
+    hold on;
+    DrawMesh(Mesh2_I, RefColor, ScaleSize );   
+    DrawMeshMotions(Mesh2_I, MotionsColor, ScaleSize )
+    setAxisValues('Mesh2: Calculated Inputs (Motions)'); 
 
 return;
 end % function
@@ -49,9 +72,12 @@ function setAxisValues(titleTxt)
     view(3)
     axis equal;
     camproj('perspective') 
-    title(titleTxt)
-maxValue = 2;
-minValue = 0;
+    if nargin>0
+        title(titleTxt)
+    end
+    
+maxValue = 2.5;
+minValue = -0.125;
     xlim([minValue,maxValue])
     ylim([minValue,maxValue])
     zlim([minValue,maxValue])

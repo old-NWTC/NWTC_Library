@@ -95,13 +95,13 @@ PROGRAM Test_TestMeshMapping
 
    do j=1,NNodes
                   
-      Angle = (-15. - 5*j)*D2R
-      Orientation(:,1) = (/     COS(Angle), SIN(Angle), 0.0 /)
-      Orientation(:,2) = (/ -1.*SIN(Angle), COS(Angle), 0.0 /)
+      Angle = (15. - 15*j)*D2R  !note this "looks" like the transpose, but isn't
+      Orientation(:,1) = (/ COS(Angle), -1.*SIN(Angle), 0.0 /)
+      Orientation(:,2) = (/ SIN(Angle),     COS(Angle), 0.0 /)
       Orientation(:,3) = (/      0.,        0.0,        1.0 /)
       
          ! place nodes in a line
-      CALL MeshPositionNode ( mesh2_I, j, (/0.0_ReKi, 0.5_ReKi, j*0.75_ReKi /), ErrStat, ErrMsg, &
+      CALL MeshPositionNode ( mesh2_I, j, (/0.0_ReKi, (j-1)*0.75_ReKi, 0.0_ReKi /), ErrStat, ErrMsg, &
            Orient= Orientation )     
       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
    
@@ -144,12 +144,14 @@ PROGRAM Test_TestMeshMapping
 
    do j=1,Mesh1_O%NNodes
       
-      Angle = (5*j)*D2R      
-      Mesh1_O%Orientation(:,1,j) = (/     COS(Angle), SIN(Angle), 0.0 /)
-      Mesh1_O%Orientation(:,2,j) = (/ -1.*SIN(Angle), COS(Angle), 0.0 /)
-      Mesh1_O%Orientation(:,3,j) = (/      0.,        0.0,        1.0 /)
+!      Angle = 0      
+      Angle = (20*j)*D2R      
+      !note this "looks" like the transpose, but isn't
+      Mesh1_O%Orientation(:,1,j) = (/ COS(Angle), -1.*SIN(Angle), 0.0 /)
+      Mesh1_O%Orientation(:,2,j) = (/ SIN(Angle),     COS(Angle), 0.0 /)
+      Mesh1_O%Orientation(:,3,j) = (/         0.,     0.0,        1.0 /)
             
-      Mesh1_O%TranslationDisp(:,j) = (/ 1., 0.,  1. /)
+      Mesh1_O%TranslationDisp(:,j) = (/ 1., 1.,  0. /)
       Mesh1_O%TranslationVel(:,j)  = (/ 1., 1.,  0. /)*.5
       Mesh1_O%RotationVel(:,j)     = (/ 0., 0.5, 0.5 /)*.5
       Mesh1_O%TranslationAcc(:,j)  = (/ 1., 1., 0. /)*.115
@@ -159,7 +161,7 @@ PROGRAM Test_TestMeshMapping
    
    do j=1,Mesh2_O%NNodes
       Mesh2_O%Force( :,j) = (/  1.0, 0.,  0.   /)*(j*0.5)
-      Mesh2_O%Moment(:,j) = (/  0.0, 0.5, 0.5  /)*(j*-0.3)
+      Mesh2_O%Moment(:,j) = (/  0.0, 0.5, 0.5  /)*(-j*0.0)
    end do
    
    
