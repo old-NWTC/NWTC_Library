@@ -78,7 +78,7 @@ PROGRAM Test_TestMeshMapping
    !   Mesh2_I (input) has motions
    !   Mesh2_O (output) as loads
    ! ..............................................................................................................................   
-   NNodes = 3
+   NNodes = 5
    
    CALL MeshCreate( BlankMesh       = mesh2_I       &
                      ,IOS           = COMPONENT_INPUT        &
@@ -95,13 +95,13 @@ PROGRAM Test_TestMeshMapping
 
    do j=1,NNodes
                   
-      Angle = (15. - 15*j)*D2R  !note this "looks" like the transpose, but isn't
+      Angle = (-25. + j*j)*D2R  !note this "looks" like the transpose, but isn't
       Orientation(:,1) = (/ COS(Angle), -1.*SIN(Angle), 0.0 /)
       Orientation(:,2) = (/ SIN(Angle),     COS(Angle), 0.0 /)
       Orientation(:,3) = (/      0.,        0.0,        1.0 /)
       
          ! place nodes in a line
-      CALL MeshPositionNode ( mesh2_I, j, (/0.0_ReKi, (j-1)*0.75_ReKi, 0.0_ReKi /), ErrStat, ErrMsg, &
+      CALL MeshPositionNode ( mesh2_I, j, (/0.0_ReKi, 0.0_ReKi, 0.25_ReKi*(j-1) /), ErrStat, ErrMsg, &
            Orient= Orientation )     
       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
    
@@ -147,11 +147,11 @@ PROGRAM Test_TestMeshMapping
 !      Angle = 0      
       Angle = (20*j)*D2R      
       !note this "looks" like the transpose, but isn't
-      Mesh1_O%Orientation(:,1,j) = (/ COS(Angle), -1.*SIN(Angle), 0.0 /)
-      Mesh1_O%Orientation(:,2,j) = (/ SIN(Angle),     COS(Angle), 0.0 /)
-      Mesh1_O%Orientation(:,3,j) = (/         0.,     0.0,        1.0 /)
+      Mesh1_O%Orientation(:,1,j) = (/  1.0,       0.0 ,            0.0 /)
+      Mesh1_O%Orientation(:,2,j) = (/  0.0, COS(Angle), -1.*SIN(Angle) /)
+      Mesh1_O%Orientation(:,3,j) = (/  0.0, SIN(Angle),     COS(Angle) /)
             
-      Mesh1_O%TranslationDisp(:,j) = (/ 1., 1.,  0. /)
+      Mesh1_O%TranslationDisp(:,j) = (/ 2., 0.,  0. /)
       Mesh1_O%TranslationVel(:,j)  = (/ 1., 1.,  0. /)*.5
       Mesh1_O%RotationVel(:,j)     = (/ 0., 0.5, 0.5 /)*.5
       Mesh1_O%TranslationAcc(:,j)  = (/ 1., 1., 0. /)*.115
@@ -160,7 +160,7 @@ PROGRAM Test_TestMeshMapping
    end do
    
    do j=1,Mesh2_O%NNodes
-      Mesh2_O%Force( :,j) = (/  1.0, 0.,  0.   /)*(j*0.5)
+      Mesh2_O%Force( :,j) = (/  1.0, 0.,  0.   /)  !*(j*0.5)
       Mesh2_O%Moment(:,j) = (/  0.0, 0.5, 0.5  /)*(-j*0.0)
    end do
    
@@ -170,8 +170,8 @@ PROGRAM Test_TestMeshMapping
    ! Map the outputs to inputs and print results:
    ! ..............................................................................................................................   
    
-   CALL Transfer_Point_to_Point( Mesh1_O, Mesh2_I, Map_Mod1_P_Mod2_P, ErrStat, ErrMsg );       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))   
-   CALL Transfer_Point_to_Point( Mesh2_O, Mesh1_I, Map_Mod2_P_Mod1_P, ErrStat, ErrMsg );       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+   CALL Transfer_Point_to_Point( Mesh1_O, Mesh2_I, Map_Mod1_P_Mod2_P, ErrStat, ErrMsg );            IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))   
+   CALL Transfer_Point_to_Point( Mesh2_O, Mesh1_I, Map_Mod2_P_Mod1_P, ErrStat, ErrMsg, Mesh2_I );   IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
    
    CALL MeshWrBin ( un_mesh1_O, Mesh1_O, ErrStat, ErrMsg, "Mesh1_Output.bin");  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
    CALL MeshWrBin ( un_mesh1_I, Mesh2_I, ErrStat, ErrMsg, "Mesh2_Input.bin");   IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))

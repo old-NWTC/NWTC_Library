@@ -19,7 +19,9 @@ MODULE Precision
 
    ! This module stores constants to specify the KIND of variables.
 
-   ! NOTE: Use compile option "/real_size:64" (or "/4R8") when using ReKi = 8 with the Visual Fortran compilers.
+   ! NOTE: When using ReKi = 8, you may need to use a compile option to convert default reals to 8 bytes:
+   !       Intel:   /real_size:64
+   !       Gnu:     -fdefault-real-8
 
 
 IMPLICIT                           NONE
@@ -49,7 +51,6 @@ INTEGER, PARAMETER              :: DbKi     = QuKi                              
 INTEGER(IntKi), PARAMETER       :: BYTES_IN_INT   =  4                          ! Number of bytes per IntKi number    - use SIZEOF()
 INTEGER(IntKi), PARAMETER       :: BYTES_IN_REAL  =  8                          ! Number of bytes per ReKi number     - use SIZEOF()
 INTEGER(IntKi), PARAMETER       :: BYTES_IN_DBL   = 16                          ! Number of bytes per DbKi number     - use SIZEOF()
-
 
 
 END MODULE Precision

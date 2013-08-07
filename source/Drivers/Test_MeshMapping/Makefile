@@ -115,17 +115,15 @@ default: Test_MeshMapping.f90 $(INTER_DIR) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 	$(FC) $(FFLAGS) -g -c $< -o $(INTER_DIR)/$@ -J $(INTER_DIR)
 
    #  Dependency rules.
-ModMesh_Types.obj:       NWTC_Num.obj
-ModMesh.obj:             ModMesh_Types.f90
 NWTC_Base.obj:           $(PREC).obj
 $(SYS_FILE).obj:         NWTC_Base.obj
 NWTC_IO.obj:             $(SYS_FILE).obj
 NWTC_Num.obj:            NWTC_IO.obj
-#NWTC_Aero.obj:           NWTC_IO.obj           NWTC_Num.obj
-#NWTC_Library.obj:        NWTC_Aero.obj         ModMesh.obj
-NWTC_Library.obj:        NWTC_IO.obj           NWTC_Num.obj         ModMesh.obj
-
+ModMesh_Types.obj:       NWTC_Num.obj
+ModMesh.obj:             ModMesh_Types.f90
 ModMesh_Mapping.obj:     ModMesh.f90
+NWTC_Library.obj:        ModMesh.obj  ModMesh_Mapping.obj
+
 
 Test_MeshMapping.obj:      ModMesh_Mapping.obj      NWTC_Library.obj
 

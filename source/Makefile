@@ -4,6 +4,8 @@ FFLAGS = -g -x f95-cpp-input -ffree-line-length-none -DFPE_TRAP_ENABLED
 SOURCES_STD =  \
   ModMesh.f90 \
   ModMesh_Types.f90 \
+  ModMesh_Mapping.f90  \
+  NWTC_Base.f90 \
   NWTC_IO.f90 \
   NWTC_Library.f90 \
   NWTC_Num.f90 \
