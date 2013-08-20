@@ -8,6 +8,7 @@ SOURCES_STD =  \
   NWTC_Base.f90 \
   NWTC_IO.f90 \
   NWTC_Library.f90 \
+  NWTC_Library_Types.f90 \
   NWTC_Num.f90 \
   SingPrec.f90
 
@@ -50,10 +51,11 @@ clean clena:
 
 #--- Module-Dependencies
 
-NWTC_IO.o: SysGnuLinux.o
+NWTC_IO.o: SysGnuLinux.o NWTC_Library_Types.o
 NWTC_Library.o: NWTC_Num.o NWTC_IO.o ModMesh.o
 NWTC_Num.o: NWTC_IO.o
-SysGnuLinux.o: SingPrec.o
+SysGnuLinux.o: SingPrec.o NWTC_Base.o
+NWTC_Library_Types.o : SysGnuLinux.o NWTC_Base.o
 ModMesh.o: SingPrec.o NWTC_Num.o ModMesh_Types.o
 
 ExampleModule.o : ModuleFluid_Types.o ModuleStructure_Types.o

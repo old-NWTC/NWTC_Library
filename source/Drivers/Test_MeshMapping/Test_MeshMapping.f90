@@ -12,7 +12,7 @@ PROGRAM Test_TestMeshMapping
    REAL(ReKi)     :: Orientation(3,3)
    REAL(ReKi)     :: Angle
    
-   INTEGER :: NNodes, i, j
+   INTEGER :: NNodes, j
    
    INTEGER :: un_mesh1_I,   un_mesh1_O, &
               un_mesh2_I,   un_mesh2_O          ! UNITS for File I/O
