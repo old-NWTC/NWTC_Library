@@ -81,15 +81,16 @@ DEST_DIR    = .
 
    # Library files.
 
-LIB_SOURCES =             \
-	$(PREC).f90        \
-	NWTC_Base.f90      \
-	$(SYS_FILE).f90    \
-	NWTC_IO.f90        \
-	ModMesh_Types.f90  \
-	ModMesh.f90        \
+LIB_SOURCES =                 \
+	$(PREC).f90                \
+	NWTC_Base.f90              \
+	$(SYS_FILE).f90            \
+	NWTC_IO.f90                \
+	NWTC_Library_Types.f90     \
+	ModMesh_Types.f90          \
+	ModMesh.f90                \
 	ModMesh_Mapping.f90        \
-	NWTC_Library.f90   \
+	NWTC_Library.f90           \
 	NWTC_Num.f90
 
 
@@ -117,7 +118,8 @@ default: Test_MeshMapping.f90 $(INTER_DIR) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
    #  Dependency rules.
 NWTC_Base.obj:           $(PREC).obj
 $(SYS_FILE).obj:         NWTC_Base.obj
-NWTC_IO.obj:             $(SYS_FILE).obj
+NWTC_Library_Types.obj:  $(SYS_FILE).obj
+NWTC_IO.obj:             NWTC_Library_Types.obj
 NWTC_Num.obj:            NWTC_IO.obj
 ModMesh_Types.obj:       NWTC_Num.obj
 ModMesh.obj:             ModMesh_Types.f90
