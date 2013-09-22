@@ -7,6 +7,11 @@
 !jm 1. "USE NWTC_Libary" is manually commented out, below, and replaced with USE SysSubs
 !jm to avoid a circular USE association with NWTC_IO, which uses this module.
 !jm 2. Every routine after NWTC_Library_UnPackfileinfotype is commented out (or you can remove the lines)
+!**********************************************************************************************************************************
+! File last committed: $Date$
+! (File) Revision #: $Rev$
+! URL: $HeadURL$
+!**********************************************************************************************************************************
 
 !
 !*********************************************************************************************************************************
