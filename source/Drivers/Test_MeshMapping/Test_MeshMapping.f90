@@ -16,147 +16,149 @@ PROGRAM Test_TestMeshMapping
    
    INTEGER :: NNodes, j
    
-   INTEGER :: un_mesh1_I,   un_mesh1_O, &
-              un_mesh2_I,   un_mesh2_O          ! UNITS for File I/O
+   INTEGER :: un_out        ! UNITS for File I/O
    
-   INTEGER :: TheseMeshTypes
+   INTEGER :: Mesh1Type
+   INTEGER :: Mesh2Type
    
    INTEGER(IntKi) :: ErrStat
-   CHARACTER(1024) :: ErrMsg
+   CHARACTER(1024) :: ErrMsg   
    
-   !integer a(0:3, -1:2)
-   !integer, allocatable :: b (:)
-   !
+   INTEGER :: TestNumber = 1
+   CHARACTER(256) :: BinOutputName 
+   
    CALL NWTC_Init()
    
    call wrscr( NewLine//'Creating two meshes with siblings and writing to binary files.'//NewLine//NewLine )
-        
-   
-!   TheseMeshTypes = ELEMENT_POINT   
-   TheseMeshTypes = ELEMENT_LINE2   
-   !print *, 'calculating values: element=', i, ' node=',MeshMap%MapLoads(i)%OtherMesh_Element
-   
+   un_out = -1
+
    ! ..............................................................................................................................   
-   ! Create Mesh1: a point mesh with one point
+   ! Mesh1 fields:
    !   Mesh1_I (input) has loads
-   !   Mesh1_O (output) as motions
+   !   Mesh1_O (output) has motions
    ! ..............................................................................................................................   
-   
-   CALL CreateMod1Mesh( TheseMeshTypes )
-      
-   !..............................
-   
-   CALL MeshCopy (     SrcMesh  = mesh1_I &
-                     , DestMesh = mesh1_O &
-                     , CtrlCode = MESH_SIBLING     &
-                     , IOS      = COMPONENT_OUTPUT &
-                     , Orientation      = .TRUE.   &
-                     , TranslationDisp  = .TRUE.   &
-                     , ErrStat  = ErrStat          &
-                     , ErrMess  = ErrMsg           )
-         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
 
-                     !, TranslationVel   = .TRUE.   &
-                     !, RotationVel      = .TRUE.   &
-                     !, TranslationAcc   = .TRUE.   &
-                     !, RotationAcc      = .TRUE.   &
-                     !
-         
    ! ..............................................................................................................................   
-   ! Create Mesh2: a point mesh with three points
+   ! Mesh2 fields:
    !   Mesh2_I (input) has motions
-   !   Mesh2_O (output) as loads
+   !   Mesh2_O (output) has loads
    ! ..............................................................................................................................   
-
-   CALL CreateMod2Mesh( TheseMeshTypes )
-
+      
+   
+   
+   ! ..............................................................................................................................   
+   ! Create input meshes: 
+   !   Mesh1_O (output) has motions
+   !   Mesh2_O (output) has loads
+   ! ..............................................................................................................................   
+      
+   ! These subroutines will set the Mesh1Type and Mesh2Type variables, then create the output meshes, set reference  
+   ! position/orientation, and set initial outputs for each module (to test mapping to inputs)
+   SELECT CASE ( TestNumber )
+   CASE(1) ! 1 point to 5 points
+      CALL CreateInputMeshes_Test1()
+   END SELECT
+   
+   WRITE(BinOutputName,'(A,I1,A)') 'Test', TestNumber ,'Meshes.bin'
+      
+   ! ..............................................................................................................................   
+   ! Create sibling input meshes: 
+   !   Mesh1_I (input) has loads
+   !   Mesh2_I (input) has motions
+   ! ..............................................................................................................................   
+   
+   
+   CALL MeshCopy (        SrcMesh      = mesh1_O                &
+                        , DestMesh     = mesh1_I                &
+                        , CtrlCode     = MESH_SIBLING           &
+                        , IOS          = COMPONENT_INPUT        &
+                        ,Force         = .TRUE.                 &
+                        ,Moment        = .TRUE.                 &
+                        ,ErrStat       = ErrStat                &
+                        ,ErrMess       = ErrMsg                 )   
+            IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+   
    !..............................
    
-   CALL MeshCopy (      SrcMesh  = mesh2_I &
-                     , DestMesh = mesh2_O &
-                     , CtrlCode = MESH_SIBLING     &
-                     , IOS      = COMPONENT_OUTPUT &
-                     , Force    = .TRUE.           &
-                     , Moment   = .TRUE.           &
-                     , ErrStat  = ErrStat          &
-                     , ErrMess  = ErrMsg           )
+   CALL MeshCopy (        SrcMesh          = mesh2_O          &
+                        , DestMesh         = mesh2_I          &
+                        , CtrlCode         = MESH_SIBLING     &
+                        , IOS              = COMPONENT_INPUT  &
+                        , Orientation      = .TRUE.           &
+                        , TranslationDisp  = .TRUE.           &
+                        , TranslationVel   = .TRUE.           &
+                        , RotationVel      = .TRUE.           &
+                        , TranslationAcc   = .TRUE.           &
+                        , RotationAcc      = .TRUE.           &
+                        , ErrStat          = ErrStat          &
+                        , ErrMess          = ErrMsg           )
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
     
    ! ..............................................................................................................................   
-   ! Initialize the data: 
+   ! Initialize the other data: 
    ! ..............................................................................................................................   
 
    CALL AllocMapping( Mesh1_O, Mesh2_I, Map_Mod1_Mod2, ErrStat, ErrMsg );       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))   
    CALL AllocMapping( Mesh2_O, Mesh1_I, Map_Mod2_Mod1, ErrStat, ErrMsg );       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+         
+   ! ..............................................................................................................................   
+   ! Initialize the output: 
+   ! ..............................................................................................................................   
    
-   un_mesh1_I = -1
-   un_mesh1_O = -1
-   un_mesh2_I = -1
-   un_mesh2_O = -1  
-      
-   
-   Mesh1_O%TranslationDisp(1,:) =  1.
-   Mesh1_O%TranslationDisp(2,:) =  0.
-   Mesh1_O%TranslationDisp(3,:) = -2.
-
-   Mesh1_O%TranslationVel = 1.
-   !Mesh1_O%RotationVel    = 0.
-   !Mesh1_O%TranslationAcc = 0.
-   !Mesh1_O%RotationAcc    = 0.
-   
-
-   !do j=1,Mesh1_O%NNodes
    !   
-   !   Angle = (20)*D2R      
-   !   !note this "looks" like the transpose, but isn't
-   !   Mesh1_O%Orientation(:,1,j) = (/  1.0,       0.0 ,            0.0 /)
-   !   Mesh1_O%Orientation(:,2,j) = (/  0.0, COS(Angle), -1.*SIN(Angle) /)
-   !   Mesh1_O%Orientation(:,3,j) = (/  0.0, SIN(Angle),     COS(Angle) /)
-   !         
-   !   Mesh1_O%TranslationVel(:,j)  = (/ 1., 1.,  0. /)*.5
-   !   Mesh1_O%RotationVel(:,j)     = (/ 0., 0.5, 0.5 /)*.5
-   !   Mesh1_O%TranslationAcc(:,j)  = (/ 1., 1., 0. /)*.115
-   !   Mesh1_O%RotationAcc(:,j)     = (/ 1., 1., 1. /)*.115
+   !Mesh2_O%Force = 0
+   !Mesh2_O%Moment       = 0.0
    !   
-   !end do   
-   
-   Mesh2_O%Force = 0
-   Mesh2_O%Moment       = 0.0
-      
-   Mesh2_O%Force(3, 1: 9) = 1.         
-   Mesh2_O%Force(1, 5)    = 0.5
-   do j=10,Mesh2_O%NNodes
-      Mesh2_O%Force(1, j) = (.125*(j-9))**5 + Mesh2_O%Force(1, 5)
-   end do
+   !Mesh2_O%Force(3, 1: 9) = 1.         
+   !Mesh2_O%Force(1, 5)    = 0.5
+   !do j=10,Mesh2_O%NNodes
+   !   Mesh2_O%Force(1, j) = (.125*(j-9))**5 + Mesh2_O%Force(1, 5)
+   !end do
    
    
-      
    ! ..............................................................................................................................   
    ! Map the outputs to inputs and print results:
    ! ..............................................................................................................................   
-   IF (TheseMeshTypes == ELEMENT_POINT) THEN
-      CALL Transfer_Point_to_Point( Mesh1_O, Mesh2_I, Map_Mod1_Mod2, ErrStat, ErrMsg );           IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))     
-      CALL Transfer_Point_to_Point( Mesh2_O, Mesh1_I, Map_Mod2_Mod1, ErrStat, ErrMsg, Mesh2_I );  IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))   
-   ELSEIF (TheseMeshTypes == ELEMENT_LINE2 ) THEN        
-      CALL Transfer_Line2_to_Line2( Mesh1_O, Mesh2_I, Map_Mod1_Mod2, ErrStat, ErrMsg );           IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))   
-PRINT *, 'Mesh1_O'
-call meshprintinfo(CU,Mesh1_O,Mesh1_O%NNodes)      
-PRINT *, 'Mesh2_O'
-call meshprintinfo(CU,Mesh2_O,Mesh2_O%NNodes)      
-      CALL Transfer_Line2_to_Line2( Mesh2_O, Mesh1_I, Map_Mod2_Mod1, ErrStat, ErrMsg, Mesh2_I, Mesh1_O );   IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))        
+   IF (Mesh1Type == ELEMENT_POINT ) THEN
+      IF ( Mesh2Type == ELEMENT_POINT ) THEN
+         CALL Transfer_Point_to_Point( Mesh1_O, Mesh2_I, Map_Mod1_Mod2, ErrStat, ErrMsg );                     IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))     
+         CALL Transfer_Point_to_Point( Mesh2_O, Mesh1_I, Map_Mod2_Mod1, ErrStat, ErrMsg, Mesh2_I, Mesh1_O );   IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))   
+      ELSEIF ( Mesh2Type == ELEMENT_LINE2) THEN                                                                
+         CALL Transfer_Point_to_Line2( Mesh1_O, Mesh2_I, Map_Mod1_Mod2, ErrStat, ErrMsg );                     IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))     
+         CALL Transfer_Line2_to_Point( Mesh2_O, Mesh1_I, Map_Mod2_Mod1, ErrStat, ErrMsg, Mesh2_I, Mesh1_O );   IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))         
+      END IF                                                                                                   
+   ELSEIF ( Mesh1Type == ELEMENT_LINE2 ) THEN                                                                  
+      IF ( Mesh2Type == ELEMENT_LINE2 ) THEN                                                                   
+         CALL Transfer_Line2_to_Line2( Mesh1_O, Mesh2_I, Map_Mod1_Mod2, ErrStat, ErrMsg );                     IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))   
+         CALL Transfer_Line2_to_Line2( Mesh2_O, Mesh1_I, Map_Mod2_Mod1, ErrStat, ErrMsg, Mesh2_I, Mesh1_O );   IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))        
+      ELSEIF ( Mesh2Type == ELEMENT_POINT ) THEN        
+         CALL Transfer_Line2_to_Point( Mesh1_O, Mesh2_I, Map_Mod1_Mod2, ErrStat, ErrMsg );                     IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))                  
+         CALL Transfer_Point_to_Line2( Mesh2_O, Mesh1_I, Map_Mod2_Mod1, ErrStat, ErrMsg, Mesh2_I, Mesh1_O );   IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))     
+      END IF      
+   END IF
+
 !PRINT *, 'Mesh1_I'
 !call meshprintinfo(CU,Mesh1_I)      
 !PRINT *, 'Mesh2_I'
-!call meshprintinfo(CU,Mesh2_I)      
-   END IF
-
+!call meshprintinfo(CU,Mesh2_I)       
+      
+!PRINT *, 'Mesh1_O'
+!call meshprintinfo(CU,Mesh1_O,Mesh1_O%NNodes)      
+!PRINT *, 'Mesh2_O'
+!call meshprintinfo(CU,Mesh2_O,Mesh2_O%NNodes)      
    
-   CALL MeshWrBin ( un_mesh1_O, Mesh1_O, ErrStat, ErrMsg, "Mesh1_Output.bin");  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
-   CALL MeshWrBin ( un_mesh1_I, Mesh2_I, ErrStat, ErrMsg, "Mesh2_Input.bin");   IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
-   CALL MeshWrBin ( un_mesh2_O, Mesh2_O, ErrStat, ErrMsg, "Mesh2_Output.bin");  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
-   CALL MeshWrBin ( un_mesh2_I, Mesh1_I, ErrStat, ErrMsg, "Mesh1_Input.bin");   IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+   
+   
+   CALL MeshWrBin ( un_out, Mesh1_I, ErrStat, ErrMsg, BinOutputName);  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+   CALL MeshWrBin ( un_out, Mesh1_O, ErrStat, ErrMsg, BinOutputName);  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+   CALL MeshWrBin ( un_out, Mesh2_I, ErrStat, ErrMsg, BinOutputName);  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+   CALL MeshWrBin ( un_out, Mesh2_O, ErrStat, ErrMsg, BinOutputName);  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
    
   
+PRINT *, 'Mesh1_O'
+call meshprintinfo(CU,Mesh1_O,Mesh1_O%NNodes)    
+PRINT *, 'Mesh2_O'
+call meshprintinfo(CU,Mesh2_O,Mesh2_O%NNodes)    
    
    ! ..............................................................................................................................   
    ! Destroy them:
@@ -172,10 +174,7 @@ call meshprintinfo(CU,Mesh2_O,Mesh2_O%NNodes)
    ! ..............................................................................................................................   
    ! Close files
    ! ..............................................................................................................................   
-   close( un_mesh1_I )
-   close( un_mesh1_O )
-   close( un_mesh2_I )
-   close( un_mesh2_O )
+   close( un_out )
    
 contains
    ! ..............................................
@@ -387,5 +386,123 @@ contains
    ! ..............................................
    
    
+   subroutine CreateInputMeshes_Test1()   
+      ! this is a point-to-point mapping, with one point going to many.
+      ! it is a figure in the AIAA paper.
+   
+      Mesh1Type = ELEMENT_POINT
+      Mesh2Type = ELEMENT_POINT
+      
+      !.........................
+      ! Mesh1 (Output: Motions)
+      !.........................
+      
+      Nnodes = 1
+            
+      CALL MeshCreate( BlankMesh          = mesh1_O           &
+                       , IOS              = COMPONENT_OUTPUT  &
+                       , NNodes           = NNodes            &
+                       , Orientation      = .TRUE.            &
+                       , TranslationDisp  = .TRUE.            &
+                       , TranslationVel   = .TRUE.            &
+                       , RotationVel      = .TRUE.            &
+                       , TranslationAcc   = .TRUE.            &
+                       , RotationAcc      = .TRUE.            &                                
+                       , ErrStat          = ErrStat           &
+                       , ErrMess          = ErrMsg            )
+      
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+
+                                    
+      do j=1,NNodes 
+            ! place nodes in a line
+         CALL MeshPositionNode ( mesh1_O, j, (/0.0_ReKi, 0.0_ReKi, 1.0_ReKi*(j-1) /), ErrStat, ErrMsg )     
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))             
+
+         CALL MeshConstructElement ( mesh1_O, ELEMENT_POINT, ErrStat, ErrMsg, j )
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                     
+         
+      END DO   
+         
+      CALL MeshCommit ( mesh1_O, ErrStat, ErrMsg )   
+      IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg)) 
+      if (ErrStat >= AbortErrLev) CALL ProgAbort("Error creating Mesh1 output for test 1.")
+
+      !..............
+      ! initialize output fields:
+      !..............      
+      
+      do j=1,Mesh1_O%NNodes
+      
+   !      Angle = 0      
+   !      Angle = (20*j)*D2R      
+         Angle = (20)*D2R      
+         !note this "looks" like the transpose, but isn't
+         Mesh1_O%Orientation(:,1,j) = (/  1.0,       0.0 ,            0.0 /)
+         Mesh1_O%Orientation(:,2,j) = (/  0.0, COS(Angle), -1.*SIN(Angle) /)
+         Mesh1_O%Orientation(:,3,j) = (/  0.0, SIN(Angle),     COS(Angle) /)
+            
+         Mesh1_O%TranslationVel(:,j)  = 0.0_ReKi ! (/ 1., 1.,  0. /)*.5
+         Mesh1_O%RotationVel(:,j)     = 0.0_ReKi ! (/ 0., 0.5, 0.5 /)*.5
+         Mesh1_O%TranslationAcc(:,j)  = 0.0_ReKi ! (/ 1., 1., 0. /)*.115
+         Mesh1_O%RotationAcc(:,j)     = 0.0_ReKi ! (/ 1., 1., 1. /)*.115
+      
+      end do
+      
+         Mesh1_O%TranslationDisp(:,1) = (/ 2., 0.,  0. /)
+      !if (Mesh1_O%NNodes > 1) &
+      !   Mesh1_O%TranslationDisp(:,2) = (/ 2., -SIN(angle),  COS(ANGLE)-1. /)
+      
+               
+      !.........................
+      ! Mesh2 (Input: Motions)
+      !.........................
+            
+        
+      NNodes = 5
+   
+      CALL MeshCreate(  BlankMesh       = mesh2_O           &
+                        , IOS           = COMPONENT_OUTPUT  &
+                        , NNodes        = NNodes            &
+                        , Force         = .TRUE.            &
+                        , Moment        = .TRUE.            &
+                        , ErrStat       = ErrStat           &
+                        , ErrMess       = ErrMsg            )   
+            IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+
+      do j=1,NNodes
+                  
+         Angle = (-25. + j*j)*D2R  !note this "looks" like the transpose, but isn't
+         Orientation(:,1) = (/ COS(Angle), -1.*SIN(Angle), 0.0 /)
+         Orientation(:,2) = (/ SIN(Angle),     COS(Angle), 0.0 /)
+         Orientation(:,3) = (/      0.,        0.0,        1.0 /)
+      
+            ! place nodes in a line
+         CALL MeshPositionNode ( mesh2_O, j, (/0.0_ReKi, 0.0_ReKi, 0.25_ReKi*(j-1) /), ErrStat, ErrMsg, &
+               Orient= Orientation )     
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+   
+         CALL MeshConstructElement ( mesh2_O, ELEMENT_POINT, ErrStat, ErrMsg, j )
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))            
+         
+
+      END DO
+                  
+         ! that's our entire mesh:
+      CALL MeshCommit ( mesh2_O, ErrStat, ErrMsg )   
+      IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))   
+      if (ErrStat >= AbortErrLev) CALL ProgAbort("Error creating Mesh2 output for test 1.")
+         
+      !..............
+      ! initialize output fields:
+      !..............
+      do j=1,Mesh2_O%NNodes
+         Mesh2_O%Force( :,j) = (/  1.0, 0.,  0.   /)  !*(j*0.5)
+         Mesh2_O%Moment(:,j) = (/  0.0, 0.5, 0.5  /)*(-j*0.0)
+      end do
+
+                  
+   end subroutine CreateInputMeshes_Test1
+         
 END PROGRAM
 
