@@ -24,7 +24,10 @@ BITS = 32
 # these settings are overridden below
 ifeq ($(OS),Windows_NT)
    LIB_DIR  = C:/Users/bjonkman/Documents/DATA/DesignCodes/miscellaneous/nwtc_subs/SVNdirectory/trunk/source
+   Work_DIR = C:/Users/bjonkman/Documents/DATA/DesignCodes/miscellaneous/nwtc_subs/SVNdirectory/branches/MeshMapping
    REGISTRY = Registry
+   LAPACK_DIR   = C:/LAPACK/win32
+   NETLIB_DIR   = C:/Users/bjonkman/Documents/DATA/DesignCodes/Simulators/FAST/SVNdirectory/branches/BJonkman/source/dependencies/NetLib
 else
 #   LIB_DIR = $(HOME)/PC/CAEtools/Miscellaneous/NWTC_Library/trunk/source
    LIB_DIR  = ../NWTC_Library/source
@@ -40,7 +43,7 @@ MODNAME_DIR = .
 FC     = gfortran
 FFLAGS = -O3 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -ffree-line-length-none
 FFLAGS = -O3 -fbacktrace -ffree-line-length-none -x f95-cpp-input
-LDFLAGS = -O3 -fbacktrace
+LDFLAGS = -O3 -fbacktrace -llapack -lblas -L$(LAPACK_DIR)
 
    # Precision.
 
@@ -93,16 +96,24 @@ LIB_SOURCES =                 \
 	NWTC_Library.f90           \
 	NWTC_Num.f90
 
+NETLIB_SOURCES =           \
+	NWTC_ScaLAPACK.f90      \
+	NWTC_LAPACK.f90         \
+	DLASRT2.f               \
+	SLASRT2.f
 
 
 MODNAME_SOURCES   =             \
 	Test_MeshMapping.f90
 
-vpath %.f90 $(LIB_DIR) $(MODNAME_DIR)
+vpath %.f90 $(Work_DIR) $(LIB_DIR) $(NETLIB_DIR) $(MODNAME_DIR)
 vpath %.mod $(INTER_DIR)
 vpath %.obj $(INTER_DIR)
 
+
 LIB_OBJS    = $(LIB_SOURCES:.f90=.obj)
+NETLIB_OBJS   = NWTC_LAPACK.obj
+#NWTC_ScaLAPACK.obj DLASRT2.obj SLASRT2.obj
 MODNAME_OBJS = $(MODNAME_SOURCES:.f90=.obj)
 
    # Rule to do everything.
@@ -113,17 +124,25 @@ default: Test_MeshMapping.f90 $(INTER_DIR) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
    # General rule for making the files.
 
 %.obj: %.f90
-	$(FC) $(FFLAGS) -g -c $< -o $(INTER_DIR)/$@ -J $(INTER_DIR)
+	$(FC) -I $(INTER_DIR) $(FFLAGS) -g -c $< -o $(INTER_DIR)/$@ -J $(INTER_DIR)
+
+%.obj: %.f
+	$(F77) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -J $(INTER_DIR) -B $(INTER_DIR)
+
 
    #  Dependency rules.
+
+NWTC_LAPACK.obj:         NWTC_Base.obj
+NWTC_ScaLAPACK.obj:      NWTC_Base.obj DLASRT2.obj SLASRT2.obj
+
 NWTC_Base.obj:           $(PREC).obj
 $(SYS_FILE).obj:         NWTC_Base.obj
 NWTC_Library_Types.obj:  $(SYS_FILE).obj
 NWTC_IO.obj:             NWTC_Library_Types.obj
 NWTC_Num.obj:            NWTC_IO.obj
 ModMesh_Types.obj:       NWTC_Num.obj
-ModMesh.obj:             ModMesh_Types.f90
-ModMesh_Mapping.obj:     ModMesh.f90
+ModMesh.obj:             ModMesh_Types.obj
+ModMesh_Mapping.obj:     ModMesh.obj  NWTC_LAPACK.obj
 NWTC_Library.obj:        ModMesh.obj  ModMesh_Mapping.obj
 
 
@@ -143,6 +162,7 @@ $(INTER_DIR):
 
 $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT): $(LIB_OBJS) $(MODNAME_OBJS) | $(INTER_DIR)
 	$(FC) $(LDFLAGS) -I $(INTER_DIR) -o $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT) \
+	$(foreach src, $(NETLIB_OBJS), $(addprefix $(INTER_DIR)/,$(src))) \
 	$(foreach src, $(LIB_OBJS), $(addprefix $(INTER_DIR)/,$(src))) \
 	$(foreach src, $(MODNAME_OBJS), $(addprefix $(INTER_DIR)/,$(src)))
 
