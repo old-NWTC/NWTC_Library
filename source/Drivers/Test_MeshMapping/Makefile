@@ -42,7 +42,7 @@ MODNAME_DIR = .
 
 FC     = gfortran
 FFLAGS = -O3 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -ffree-line-length-none
-FFLAGS = -O3 -fbacktrace -ffree-line-length-none -x f95-cpp-input
+FFLAGS = -O3 -fbacktrace -ffree-line-length-none -x f95-cpp-input  -DMESH_DEBUG
 LDFLAGS = -O3 -fbacktrace -llapack -lblas -L$(LAPACK_DIR)
 
    # Precision.
