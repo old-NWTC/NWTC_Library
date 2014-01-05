@@ -27,8 +27,8 @@ MODULE Precision
    ! This module stores constants to specify the KIND of variables.
 
    ! NOTE: When using ReKi = 8, you may need to use a compile option to convert default reals to 8 bytes:
-   !       Intel:   /real_size:64
-   !       Gnu:     -fdefault-real-8
+   !       Intel:   /real_size:64           /double_size:128
+   !       Gnu:     -fdefault-real-8        
 
 
 IMPLICIT                           NONE

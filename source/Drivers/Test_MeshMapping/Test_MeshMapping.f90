@@ -37,7 +37,7 @@ PROGRAM Test_TestMeshMapping
    
    !call wrscr( NewLine//'Creating two meshes with siblings and writing to binary files.'//NewLine//NewLine )
    
-   DO TestNumber=1,8 !1,8
+   DO TestNumber=1,9
 
       print *, '---------------------------------------------------------------'
       print *, '   Test ', TestNumber
@@ -68,7 +68,7 @@ PROGRAM Test_TestMeshMapping
       CASE(1) ! 1 point to 5 points
          CALL CreateOutputMeshes_Test1()
       CASE(2) ! 'T' with resolution gain
-         CALL CreateOutputMeshes_Test2('A')
+         CALL CreateOutputMeshes_Test2('A') ! was 'A'
       CASE(3) ! 'T' with loss of resolution
          CALL CreateOutputMeshes_Test2('B')
       CASE(4) ! 'T' with equal nodes
@@ -170,33 +170,73 @@ PROGRAM Test_TestMeshMapping
       CALL MeshWrBin ( un_out, mesh_Motion_1PT, ErrStat, ErrMsg, BinOutputName);  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))   
       CALL MeshMapWrBin( un_out, Mesh1_O, Mesh2_I, Map_Mod1_Mod2, ErrStat, ErrMsg, BinOutputName );  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg)) 
       CALL MeshMapWrBin( un_out, Mesh2_O, Mesh1_I, Map_Mod2_Mod1, ErrStat, ErrMsg, BinOutputName );  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg)) 
-      close( un_out )
+      !close( un_out )
   
 
       ! ..............................................................................................................................   
       ! map the loads from the transfer to a single point to verify the two modules have the same total loads:
       ! ..............................................................................................................................   
-     ! Mesh1_O%TranslationDisp = 0.0_ReKi
       IF ( Mesh1Type == ELEMENT_POINT ) THEN
          CALL Transfer_Point_to_Point( Mesh1_I, Mesh1_I_1PT, Map_Mod1_I_1PT,ErrStat,ErrMsg,mesh1_O,mesh_Motion_1PT);         
       ELSEIF ( Mesh1Type == ELEMENT_LINE2 ) THEN
          CALL Transfer_Line2_to_Point( Mesh1_I, Mesh1_I_1PT, Map_Mod1_I_1PT,ErrStat,ErrMsg,mesh1_O,mesh_Motion_1PT);         
       END IF
       
-      !mesh2_I%TranslationDisp = 0.0_ReKi
       IF ( Mesh2Type == ELEMENT_POINT ) THEN
          CALL Transfer_Point_to_Point( Mesh2_O, Mesh2_O_1PT, Map_Mod2_O_1PT,ErrStat,ErrMsg,mesh2_I,mesh_Motion_1PT);
       ELSEIF ( Mesh2Type == ELEMENT_LINE2 ) THEN 
          CALL Transfer_Line2_to_Point( Mesh2_O, Mesh2_O_1PT, Map_Mod2_O_1PT,ErrStat,ErrMsg,mesh2_I,mesh_Motion_1PT);         
       END IF
+                  
       
+      CALL MeshMapWrBin( un_out, Mesh1_I, Mesh1_I_1PT, Map_Mod1_I_1PT, ErrStat, ErrMsg, BinOutputName );  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg)) 
+      CALL MeshMapWrBin( un_out, Mesh2_O, Mesh2_O_1PT, Map_Mod2_O_1PT, ErrStat, ErrMsg, BinOutputName );  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg)) 
+      
+      ! ..............................................................................................................................   
+      ! Write some info to the screen
+      ! ..............................................................................................................................   
+   !PRINT *, 'mesh1_I_1PT:'
+   !call meshprintinfo(CU,mesh1_I_1PT,mesh1_I_1PT%NNodes)    
+   !PRINT *, 'mesh2_O_1PT:'
+   !call meshprintinfo(CU,mesh2_O_1PT,mesh2_O_1PT%NNodes)    
+   
+   
+   PrintWarnF=""
+   PrintWarnM=""
+   do i=1,3
+      if (.NOT. equalrealnos(mesh1_I_1PT%Force( i,1),mesh2_O_1PT%Force( i,1)) ) PrintWarnF=NewLine//"  <----------- WARNING: Forces are not equal ----------->  "//NewLine//NewLine
+      if (.NOT. equalrealnos(mesh1_I_1PT%Moment(i,1),mesh2_O_1PT%Moment(i,1)) ) PrintWarnM=NewLine//"  <----------- WARNING: Moments are not equal ----------->  "//NewLine//NewLine
+   end do
+   
+      call wrscr(TRIM(PrintWarnF)//'Total Force:' )
+      print *, '     Mesh 1:',mesh1_I_1PT%Force 
+      print *, '     Mesh 2:',mesh2_O_1PT%Force 
+      call wrscr(TRIM(PrintWarnM)//'Total Moment:' )
+      print *, '     Mesh 1:',mesh1_I_1PT%Moment 
+      print *, '     Mesh 2:',mesh2_O_1PT%Moment      
+     
+     
+#ifdef MESH_DEBUG  
+   
+   
+      call MeshPrintInfo(10*(1+TestNumber)+1,Mesh1_I) 
+      call MeshPrintInfo(10*(1+TestNumber)+1,mesh1_O) 
+      call MeshPrintInfo(10*(1+TestNumber)+3,mesh1_I_1PT) 
+      call MeshPrintInfo(10*(1+TestNumber)+3,mesh_Motion_1PT) 
+
+      call MeshPrintInfo(10*(1+TestNumber)+2,Mesh2_O) 
+      call MeshPrintInfo(10*(1+TestNumber)+2,mesh2_I) 
+      call MeshPrintInfo(10*(1+TestNumber)+4,mesh2_O_1PT) 
+      call MeshPrintInfo(10*(1+TestNumber)+4,mesh_Motion_1PT) 
+
+if (LEN_TRIM(PrintWarnM)>0 .OR. LEN_TRIM(PrintWarnF)>0 ) THEN
+      call wrscr(NewLine)
       call wrmatrix( mesh1_O%TranslationDisp, CU, 'f10.5')
+      call wrscr(NewLine)
      ! call wrmatrix( mesh2_I%TranslationDisp, CU, 'f10.5')
      ! call wrmatrix( mesh_Motion_1PT%TranslationDisp, CU, 'f10.5')
      ! call wrmatrix( mesh_Motion_1PT%Position, CU, 'f10.5')
-               
-   
-#ifdef MESH_DEBUG  
+
 
    if (Map_Mod2_Mod1%Augmented_Ln2_Src%committed) THEN
       CALL MeshCopy( Mesh2_O_1PT, mesh2_O_1PT_augmented, MESH_NEWCOPY, ErrStat, ErrMsg )
@@ -234,46 +274,22 @@ PROGRAM Test_TestMeshMapping
    end if
          
             
-      call wrscr('Total Force:' )
-                                           print *, '     Mesh 2:            ',mesh2_O_1PT%Force 
-      if (mesh2_O_1PT_augmented%committed) print *, '     Mesh 2 (augmented):',mesh2_O_1PT_augmented%Force 
-      if (mesh2_O_1PT_lumped%committed)    print *, '     Mesh 2 (lumped):   ',mesh2_O_1PT_lumped%Force 
-      if (mesh1_I_1PT_lumped%committed)    print *, '     Mesh 1 (lumped):   ',mesh1_I_1PT_lumped%Force 
-                                           print *, '     Mesh 1:            ',mesh1_I_1PT%Force 
+      call wrscr('Total Force:' )                                                                                                                            
+                                           print *, '     Mesh 2:            ',mesh2_O_1PT%Force ,          trim(num2lstr(mesh2_O%Nnodes                          ))
+      if (mesh2_O_1PT_augmented%committed) print *, '     Mesh 2 (augmented):',mesh2_O_1PT_augmented%Force, trim(num2lstr(Map_Mod2_Mod1%Augmented_Ln2_Src%Nnodes  ))
+      if (mesh2_O_1PT_lumped%committed)    print *, '     Mesh 2 (lumped):   ',mesh2_O_1PT_lumped%Force ,   trim(num2lstr(Map_Mod2_Mod1%Lumped_Points_Src%Nnodes  ))
+      if (mesh1_I_1PT_lumped%committed)    print *, '     Mesh 1 (lumped):   ',mesh1_I_1PT_lumped%Force ,   trim(num2lstr(Map_Mod2_Mod1%Lumped_Points_Dest%Nnodes ))
+                                           print *, '     Mesh 1:            ',mesh1_I_1PT%Force ,          trim(num2lstr(mesh1_I%Nnodes                          ))
       call wrscr('Total Moment:' )
-                                           print *, '     Mesh 2:            ',mesh2_O_1PT%Moment 
-      if (mesh2_O_1PT_augmented%committed) print *, '     Mesh 2 (augmented):',mesh2_O_1PT_augmented%Moment 
-      if (mesh2_O_1PT_lumped%committed)    print *, '     Mesh 2 (lumped):   ',mesh2_O_1PT_lumped%Moment 
-      if (mesh1_I_1PT_lumped%committed)    print *, '     Mesh 1 (lumped):   ',mesh1_I_1PT_lumped%Moment 
-                                           print *, '     Mesh 1:            ',mesh1_I_1PT%Moment       
+                                           print *, '     Mesh 2:            ',mesh2_O_1PT%Moment ,          trim(num2lstr(mesh2_O%Nnodes                          ))
+      if (mesh2_O_1PT_augmented%committed) print *, '     Mesh 2 (augmented):',mesh2_O_1PT_augmented%Moment, trim(num2lstr(Map_Mod2_Mod1%Augmented_Ln2_Src%Nnodes  ))
+      if (mesh2_O_1PT_lumped%committed)    print *, '     Mesh 2 (lumped):   ',mesh2_O_1PT_lumped%Moment ,   trim(num2lstr(Map_Mod2_Mod1%Lumped_Points_Src%Nnodes  ))
+      if (mesh1_I_1PT_lumped%committed)    print *, '     Mesh 1 (lumped):   ',mesh1_I_1PT_lumped%Moment ,   trim(num2lstr(Map_Mod2_Mod1%Lumped_Points_Dest%Nnodes ))
+                                           print *, '     Mesh 1:            ',mesh1_I_1PT%Moment       ,    trim(num2lstr(mesh1_I%Nnodes                          ))
+END IF
 #endif
       
       
-      
-      
-      
-      ! ..............................................................................................................................   
-      ! Write some info to the screen
-      ! ..............................................................................................................................   
-   !PRINT *, 'mesh1_I_1PT:'
-   !call meshprintinfo(CU,mesh1_I_1PT,mesh1_I_1PT%NNodes)    
-   !PRINT *, 'mesh2_O_1PT:'
-   !call meshprintinfo(CU,mesh2_O_1PT,mesh2_O_1PT%NNodes)    
-   
-   
-   PrintWarnF=""
-   PrintWarnM=""
-   do i=1,3
-      if (.NOT. equalrealnos(mesh1_I_1PT%Force( i,1),mesh2_O_1PT%Force( i,1)) ) PrintWarnF=NewLine//"  <----------- WARNING: Forces are not equal ----------->  "//NewLine//NewLine
-      if (.NOT. equalrealnos(mesh1_I_1PT%Moment(i,1),mesh2_O_1PT%Moment(i,1)) ) PrintWarnM=NewLine//"  <----------- WARNING: Moments are not equal ----------->  "//NewLine//NewLine
-   end do
-   
-      call wrscr(TRIM(PrintWarnF)//'Total Force:' )
-      print *, '     Mesh 1:',mesh1_I_1PT%Force 
-      print *, '     Mesh 2:',mesh2_O_1PT%Force 
-      call wrscr(TRIM(PrintWarnM)//'Total Moment:' )
-      print *, '     Mesh 1:',mesh1_I_1PT%Moment 
-      print *, '     Mesh 2:',mesh2_O_1PT%Moment 
                
       ! ..............................................................................................................................   
       ! Destroy data structures:
@@ -307,7 +323,11 @@ PROGRAM Test_TestMeshMapping
       call MeshMapDestroy(Map_Mod1_I_1PT_lumped,    ErrStat, ErrMsg);IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
 #endif      
       
-      
+      ! ..............................................................................................................................   
+      ! open files:
+      ! ..............................................................................................................................   
+      close( un_out )
+
    
    end do
    
@@ -486,7 +506,7 @@ contains
          NumHorizNodes  = 9  
          ConnectionNode = 5
          NumVertNodes   = 8
-      CASE ('B','C')
+      CASE ('B','C','D')
          NumHorizNodes  =  5
          ConnectionNode =  3
          NumVertNodes   =  2
@@ -579,6 +599,10 @@ contains
       CASE ('A','C')
          NumHorizNodes  =  5
          ConnectionNode =  3
+         NumVertNodes   =  2
+      CASE ('D')
+         NumHorizNodes  =  3
+         ConnectionNode =  2
          NumVertNodes   =  2
       END SELECT
       
