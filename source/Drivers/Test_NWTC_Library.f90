@@ -18,6 +18,7 @@
 PROGRAM Test_NWTC_Library
 
     USE NWTC_Library
+    USE NWTC_LAPACK
     IMPLICIT NONE   
     
    
@@ -47,11 +48,21 @@ PROGRAM Test_NWTC_Library
       ! File name
    CHARACTER(1024) :: InputFileName = 'TestData/TestLibrary_InputFile.txt'
    
+   INTEGER(IntKi) :: ErrStat
+   CHARACTER(1024) :: ErrMsg
+   
+   
    INTEGER(IntKi), ALLOCATABLE  :: TempVec(:,:)
    INTEGER(IntKi), ALLOCATABLE  :: IC(:)
    integer,parameter ::    NMX = 9
    integer :: i, j
+   
+   integer, parameter:: m=5
+   integer, parameter:: n=5
+   double precision :: a(m,n), b(n,1)
+   integer :: ipiv(m)
 
+   type(meshtype) :: mesh1, mesh2, mesh3
    
    !...............................................................................................................................    
    ! Initialize the library
@@ -60,6 +71,16 @@ PROGRAM Test_NWTC_Library
    CALL NWTC_Init(  )
    
 
+   !...............................................................................................................................    
+   ! Test interface with LAPACK
+   !...............................................................................................................................    
+         
+   call LAPACK_GETRF( m, n, a, m, IPIV, ErrStat, ErrMsg )
+   print *, 'LAPACK_Getrf: ', ErrStat, TRIM(ErrMsg)       
+   
+   call LAPACK_GETRs( 'N', n, 1, a, m, IPIV, b, n, ErrStat, ErrMsg )
+   print *, 'LAPACK_dGETRs: ', ErrStat, TRIM(ErrMsg)       
+  
    !...............................................................................................................................    
    ! Let's check that the PRECISION kinds are specified correctly:
    !...............................................................................................................................    
@@ -215,7 +236,141 @@ PROGRAM Test_NWTC_Library
    !end do
    !
    !deallocate( IC )
-!----------------------------   
+
+   !-----------------------------------------------------------
+   ! Test some mesh routines:
+   !-----------------------------------------------------------
+
+   CALL WRSCR( 'start of mesh tests:' )   
+   ! PAUSE
+   
+   
+   i = 2
+   
+   CALL MeshCreate( BlankMesh       = Mesh1       &
+                     ,IOS           = COMPONENT_INPUT        &
+                     ,NNodes        = i                      &
+                     ,Force         = .TRUE.                 &
+                     ,Moment        = .TRUE.                 &
+                     ,ErrStat       = ErrStat                &
+                     ,ErrMess       = ErrMsg                 )   
+
+   do j=1,i
+         ! place nodes in a line
+      CALL MeshPositionNode ( Mesh1, j, (/0.0_ReKi, 0.0_ReKi, j*1.0_ReKi /), ErrStat, ErrMsg )     
+      IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+   
+         ! create an element from this point   
+      
+      CALL MeshConstructElement ( Mesh1, ELEMENT_POINT, ErrStat, ErrMsg, j )
+      IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))            
+
+   END DO
+   
+      ! that's our entire mesh:
+   CALL MeshCommit ( Mesh1, ErrStat, ErrMsg )   
+   IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))   
+   Mesh1%Force  = 1.
+   Mesh1%Moment = 0.
+   
+   CALL WRSCR( 'finished creating mesh 1' )   
+   if (i<5) THEN
+      CALL WRSCR( 'mesh 1 info:' )   
+      call meshprintinfo(CU,Mesh1)   
+   end if
+   ! PAUSE
+   
+   CALL MeshCopy ( SrcMesh  = Mesh1 &
+                 , DestMesh = Mesh2 &
+                 , CtrlCode = MESH_SIBLING     &
+                 , RotationVel     = .TRUE.    &
+                 , ErrStat  = ErrStat          &
+                 , ErrMess  = ErrMsg           )
+      
+   
+   CALL WRSCR( 'finished creating sibling mesh 2' )
+   Mesh2%RotationVel = 3
+   
+   if (i<5) THEN
+      CALL WRSCR( 'mesh 2 info:' )   
+      call meshprintinfo(CU,Mesh2)   
+   end if
+   ! PAUSE
+
+   CALL MeshCopy ( SrcMesh  = Mesh1 &
+                 , DestMesh = Mesh3 &
+                 , CtrlCode = MESH_NEWCOPY     &
+                 , ErrStat  = ErrStat          &
+                 , ErrMess  = ErrMsg           )
+   
+   CALL WRSCR( 'finished creating new mesh 3' )
+   MESH3%Force=10
+   if (i<5) THEN
+      CALL WRSCR( 'mesh 3 info:' )   
+      call meshprintinfo(CU,Mesh3)   
+   end if
+   !PAUSE
+   
+   CALL MeshDestroy( Mesh2, ErrStat, ErrMsg, .TRUE. ) !delete only mesh 2 (not its sibling, too)
+   if (i<5) THEN
+      CALL WRSCR( 'mesh 1 info:' )   
+      call meshprintinfo(CU,Mesh1)   
+   end if
+   CALL WRSCR( 'finished deleting mesh 2' )   
+   !PAUSE
+   
+   CALL MeshCopy ( SrcMesh  = Mesh1 &
+                 , DestMesh = Mesh2 &
+                 , CtrlCode = MESH_SIBLING     &
+                 , TranslationDisp = .TRUE.    &
+                 , Orientation     = .TRUE.    &
+                 , RotationVel     = .TRUE.    &
+                 , TranslationVel  = .TRUE.    &
+                 , RotationAcc     = .TRUE.    &
+                 , TranslationAcc  = .TRUE.    &
+                 , ErrStat  = ErrStat          &
+                 , ErrMess  = ErrMsg           )
+      
+   
+   CALL WRSCR( 'finished creating sibling mesh 2' )
+   !PAUSE
+   
+   
+   CALL MeshDestroy( Mesh2, ErrStat, ErrMsg, .true. ) !delete mesh 2 BUT NOT its sibling (mesh 1)
+   CALL WRSCR( 'finished deleting mesh 1' )
+   !CALL MeshDestroy( Mesh2, ErrStat, ErrMsg, .FALSE. ) !delete both mesh 2 and its sibling (mesh 1)
+   !CALL WRSCR( 'finished deleting meshes 1 and 2' )
+   !PAUSE
+
+   CALL MeshDestroy( Mesh3, ErrStat, ErrMsg ) !delete mesh 3
+   CALL WRSCR( 'finished deleting mesh 3' )      
+   !PAUSE
+   
+   CALL WRSCR( 'finished this test' )      
+   ! PAUSE
+    
+   do i=1,10000
+      print *, i, 'Copy:'
+      CALL MeshCopy ( SrcMesh  = Mesh1 &
+                    , DestMesh = Mesh3 &
+                    , CtrlCode = MESH_NEWCOPY     &
+                    , ErrStat  = ErrStat          &
+                    , ErrMess  = ErrMsg           )
+      IF (ErrStat/=ErrID_None) print *, TRIM(ErrMsg)
+      
+      print *, i, 'Destroy:'
+      CALL MeshDestroy( Mesh3, ErrStat, ErrMsg, .FALSE. ) !delete mesh 3
+      IF (ErrStat/=ErrID_None) print *, TRIM(ErrMsg)
+      
+   
+   END DO
+   
+   
+   CALL MeshDestroy( Mesh1, ErrStat, ErrMsg, .FALSE. )
+   CALL WRSCR( 'finished mesh copy/destroy test' )    
+   !! PAUSE
+
+   !-----------------------------------------------------------
    
    
 END PROGRAM Test_NWTC_Library

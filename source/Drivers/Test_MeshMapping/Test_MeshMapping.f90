@@ -219,15 +219,15 @@ PROGRAM Test_TestMeshMapping
 #ifdef MESH_DEBUG  
    
    
-      call MeshPrintInfo(10*(1+TestNumber)+1,Mesh1_I) 
-      call MeshPrintInfo(10*(1+TestNumber)+1,mesh1_O) 
-      call MeshPrintInfo(10*(1+TestNumber)+3,mesh1_I_1PT) 
-      call MeshPrintInfo(10*(1+TestNumber)+3,mesh_Motion_1PT) 
-
-      call MeshPrintInfo(10*(1+TestNumber)+2,Mesh2_O) 
-      call MeshPrintInfo(10*(1+TestNumber)+2,mesh2_I) 
-      call MeshPrintInfo(10*(1+TestNumber)+4,mesh2_O_1PT) 
-      call MeshPrintInfo(10*(1+TestNumber)+4,mesh_Motion_1PT) 
+      !call MeshPrintInfo(10*(1+TestNumber)+1,Mesh1_I) 
+      !call MeshPrintInfo(10*(1+TestNumber)+1,mesh1_O) 
+      !call MeshPrintInfo(10*(1+TestNumber)+3,mesh1_I_1PT) 
+      !call MeshPrintInfo(10*(1+TestNumber)+3,mesh_Motion_1PT) 
+      !
+      !call MeshPrintInfo(10*(1+TestNumber)+2,Mesh2_O) 
+      !call MeshPrintInfo(10*(1+TestNumber)+2,mesh2_I) 
+      !call MeshPrintInfo(10*(1+TestNumber)+4,mesh2_O_1PT) 
+      !call MeshPrintInfo(10*(1+TestNumber)+4,mesh_Motion_1PT) 
 
 if (LEN_TRIM(PrintWarnM)>0 .OR. LEN_TRIM(PrintWarnF)>0 ) THEN
       call wrscr(NewLine)
@@ -369,6 +369,8 @@ contains
       ! this is a point-to-point mapping, with one point going to many.
       ! it is a figure in the AIAA paper.
    
+      real(ReKi)   :: dz
+         
       Mesh1Type = ELEMENT_POINT
       Mesh2Type = ELEMENT_POINT
       
@@ -421,16 +423,13 @@ contains
          Mesh1_O%Orientation(:,2,j) = (/  0.0, COS(Angle), -1.*SIN(Angle) /)
          Mesh1_O%Orientation(:,3,j) = (/  0.0, SIN(Angle),     COS(Angle) /)
             
-         Mesh1_O%TranslationVel(:,j)  = 0.0_ReKi ! (/ 1., 1.,  0. /)*.5
-         Mesh1_O%RotationVel(:,j)     = 0.0_ReKi ! (/ 0., 0.5, 0.5 /)*.5
+         Mesh1_O%TranslationDisp(:,j) = (/ 2.00, 0.,  0. /)
+         Mesh1_O%TranslationVel(:,j)  = (/ 0.5,  0.0, 0.0 /)
+         Mesh1_O%RotationVel(:,j)     = (/ 2.0,  0.0, 0.0 /)
          Mesh1_O%TranslationAcc(:,j)  = 0.0_ReKi ! (/ 1., 1., 0. /)*.115
-         Mesh1_O%RotationAcc(:,j)     = 0.0_ReKi ! (/ 1., 1., 1. /)*.115
+         Mesh1_O%RotationAcc(:,j)     = (/ 2.0, 0.0, 0.0 /)
       
       end do
-      
-         Mesh1_O%TranslationDisp(:,1) = (/ 2., 0.,  0. /)
-      !if (Mesh1_O%NNodes > 1) &
-      !   Mesh1_O%TranslationDisp(:,2) = (/ 2., -SIN(angle),  COS(ANGLE)-1. /)
       
                
       !.........................
@@ -439,6 +438,7 @@ contains
             
         
       NNodes = 5
+      dz = 1.0/(Nnodes-1)
    
       CALL MeshCreate(  BlankMesh       = mesh2_O           &
                         , IOS           = COMPONENT_OUTPUT  &
@@ -457,7 +457,7 @@ contains
          Orientation(:,3) = (/      0.,        0.0,        1.0 /)
       
             ! place nodes in a line
-         CALL MeshPositionNode ( mesh2_O, j, (/0.0_ReKi, 0.0_ReKi, 0.25_ReKi*(j-1) /), ErrStat, ErrMsg, &
+         CALL MeshPositionNode ( mesh2_O, j, (/0.0_ReKi, 0.0_ReKi, dz*(j-1) /), ErrStat, ErrMsg, &
                Orient= Orientation )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
    
@@ -545,6 +545,10 @@ contains
                        , NNodes           = 1                 &
                        , Orientation      = .TRUE.            &
                        , TranslationDisp  = .TRUE.            &
+                       , TranslationVel   = .TRUE.            &
+                       , TranslationAcc   = .TRUE.            &
+                       , RotationVel      = .TRUE.            &
+                       , RotationAcc      = .TRUE.            &
                        , ErrStat          = ErrStat           &
                        , ErrMess          = ErrMsg            )
       
@@ -558,35 +562,16 @@ contains
       RotateMesh%Orientation(:,1,1) = (/  COS(Angle) , -1.*SIN(Angle), 0.0 /)
       RotateMesh%Orientation(:,2,1) = (/  SIN(Angle),      COS(Angle), 0.0 /)
       RotateMesh%Orientation(:,3,1) = (/  0.0,         0.0,            1.0 /)
-      RotateMesh%TranslationDisp(:,1) = (/ 1.00, 1.50,  0.00 /) !bjj: this needs to be calculated, based on the point-to-point equations...
+      RotateMesh%TranslationDisp(:,1) = (/ 1.00, 1.50,  0.00 /) 
+      RotateMesh%TranslationVel( :,1) = (/   Pi,   Pi,  0.00 /) *0.0
+      RotateMesh%RotationVel(    :,1) = (/ 0.00, 0.00,  0.5 /) 
        
       CALL AllocMapping( RotateMesh, Mesh1_O, rotateMesh_map, ErrStat, ErrMsg) ; IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
       CALL Transfer_Point_to_Line2( RotateMesh, Mesh1_O, rotateMesh_map, ErrStat, ErrMsg); IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
       
       call MeshDestroy(rotateMesh,ErrStat,ErrMsg)
       call MeshMapDestroy( rotateMesh_map,ErrStat,ErrMsg)
-      
-      
-      
-   !   do j=1,Mesh1_O%NNodes
-   !   
-   !      !Angle = 0      
-   !!      Angle = (20*j)*D2R      
-   !      Angle = (15)*D2R      
-   !      !note this "looks" like the transpose, but isn't
-   !      Mesh1_O%Orientation(:,1,j) = (/  COS(Angle) , -1.*SIN(Angle), 0.0 /)
-   !      Mesh1_O%Orientation(:,2,j) = (/  SIN(Angle),      COS(Angle), 0.0 /)
-   !      Mesh1_O%Orientation(:,3,j) = (/  0.0,         0.0,            1.0 /)
-   !         
-   !      Mesh1_O%TranslationVel(:,j)  = 0.0_ReKi ! (/ 1., 1.,  0. /)*.5
-   !      Mesh1_O%RotationVel(:,j)     = 0.0_ReKi ! (/ 0., 0.5, 0.5 /)*.5
-   !      Mesh1_O%TranslationAcc(:,j)  = 0.0_ReKi ! (/ 1., 1., 0. /)*.115
-   !      Mesh1_O%RotationAcc(:,j)     = 0.0_ReKi ! (/ 1., 1., 1. /)*.115
-   !
-   !      Mesh1_O%TranslationDisp(:,j) = (/ 0.01, 0.01,  0.00 /) !bjj: this needs to be calculated, based on the point-to-point equations...
-   !               
-   !   end do
-                           
+                                       
       !.........................
       ! Mesh2 (Output: Loads)
       !.........................
@@ -755,16 +740,14 @@ contains
          Mesh1_O%Orientation(:,1,j) = (/  COS(Angle),   0.0,  1.*SIN(Angle) /)
          Mesh1_O%Orientation(:,2,j) = (/  0.0,          1.0,            0.0 /)
          Mesh1_O%Orientation(:,3,j) = (/-1.*SIN(Angle), 0.0,     COS(Angle) /)
-            
-         Mesh1_O%TranslationVel(:,j)  = 0.0_ReKi ! (/ 1., 1.,  0. /)*.5
-         Mesh1_O%RotationVel(:,j)     = 0.0_ReKi ! (/ 0., 0.5, 0.5 /)*.5
-         Mesh1_O%TranslationAcc(:,j)  = 0.0_ReKi ! (/ 1., 1., 0. /)*.115
-         Mesh1_O%RotationAcc(:,j)     = 0.0_ReKi ! (/ 1., 1., 1. /)*.115
-         
+                     
          Mesh1_O%TranslationDisp(:,j) = (/ 2.*(1.0-COS(Angle)), 0., 2.0*SIN(Angle)-Mesh1_O%Position(3,j) /)
-         !Mesh1_O%TranslationDisp(:,1) = (/ 0.,0.,0. /)
-         !Mesh1_O%TranslationDisp(:,2) = (/ 0.,0.,2. /)
-      
+
+         Mesh1_O%TranslationVel( :,j) = Mesh1_O%TranslationDisp(:,j)*1.5
+         Mesh1_O%RotationVel(:,j)     = (/ 0.0, Angle, 0.0 /)*1.5
+         Mesh1_O%TranslationAcc(:,j)  = 0.0_ReKi 
+         Mesh1_O%RotationAcc(:,j)     = 0.0_ReKi
+                           
       end do
       
                
@@ -885,24 +868,20 @@ contains
       
          Angle = 0      
    !      Angle = (20*j)*D2R      
-   !      Angle = (20)*D2R      
+        Angle = (20)*D2R      
          !note this "looks" like the transpose, but isn't
          Mesh1_O%Orientation(:,1,j) = (/  1.0,       0.0 ,            0.0 /)
          Mesh1_O%Orientation(:,2,j) = (/  0.0, COS(Angle), -1.*SIN(Angle) /)
          Mesh1_O%Orientation(:,3,j) = (/  0.0, SIN(Angle),     COS(Angle) /)
-            
-         Mesh1_O%TranslationVel(:,j)  = 0.0_ReKi ! (/ 1., 1.,  0. /)*.5
-         Mesh1_O%RotationVel(:,j)     = 0.0_ReKi ! (/ 0., 0.5, 0.5 /)*.5
+                                 
+         Mesh1_O%TranslationDisp(:,j) = (/ 2.00, 0.,  0. /)
+         Mesh1_O%TranslationVel(:,j)  = (/ 0.5,  0.0, 0.0 /)
+         Mesh1_O%RotationVel(:,j)     = (/ 2.0,  0.0, 0.0 /)
          Mesh1_O%TranslationAcc(:,j)  = 0.0_ReKi ! (/ 1., 1., 0. /)*.115
-         Mesh1_O%RotationAcc(:,j)     = 0.0_ReKi ! (/ 1., 1., 1. /)*.115
-      
+         Mesh1_O%RotationAcc(:,j)     = (/ 2.0, 0.0, 0.0 /)
+                        
       end do
-      
-         Mesh1_O%TranslationDisp(:,1) = (/ 2., 0.,  0. /)
-      !if (Mesh1_O%NNodes > 1) &
-      !   Mesh1_O%TranslationDisp(:,2) = (/ 2., -SIN(angle),  COS(ANGLE)-1. /)
-      
-               
+                           
       !.........................
       ! Mesh2 (Output: Loads)
       !.........................
@@ -958,7 +937,7 @@ contains
    subroutine CreateOutputMeshes_Test7(ThisCase)   
    
       character(1), intent(in) :: ThisCase
-      integer, parameter :: Nnodes = 8
+      integer, parameter :: Nnodes = 10
       
       SELECT CASE (ThisCase)
       CASE ('A')
@@ -1038,13 +1017,12 @@ contains
          Mesh1_O%Orientation(:,2,j) = (/  0.0, COS(Angle), -1.*SIN(Angle) /)
          Mesh1_O%Orientation(:,3,j) = (/  0.0, SIN(Angle),     COS(Angle) /)
             
-         Mesh1_O%TranslationVel(:,j)  = 0.0_ReKi ! (/ 1., 1.,  0. /)*.5
-         Mesh1_O%RotationVel(:,j)     = 0.0_ReKi ! (/ 0., 0.5, 0.5 /)*.5
-         Mesh1_O%TranslationAcc(:,j)  = 0.0_ReKi ! (/ 1., 1., 0. /)*.115
-         Mesh1_O%RotationAcc(:,j)     = 0.0_ReKi ! (/ 1., 1., 1. /)*.115
-         
-          Mesh1_O%TranslationDisp(:,j) = (/ 2., 0.,  0. /)
-      
+         Mesh1_O%TranslationDisp(:,j) = (/ 2., 0.,  0. /)        
+         Mesh1_O%TranslationVel(:,j)  = (/ 2., 0.0, 0.0 /)
+         Mesh1_O%RotationVel(:,j)     = 0.0_ReKi 
+         Mesh1_O%TranslationAcc(:,j)  = (/  -1., 0.0, 0.0 /)
+         Mesh1_O%RotationAcc(:,j)     = 0.0_ReKi 
+                         
       end do
                     
    

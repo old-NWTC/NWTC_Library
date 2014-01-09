@@ -16,7 +16,7 @@ SOURCES_SYS = SysGnuLinux.f90
 
 SOURCES = $(SOURCES_STD) $(SOURCES_SYS)
 
-INCLUDE = -I../../NWTC_Library/source -I.
+INCLUDE = -I../../../NWTC_Library/source -I. -I..
 
 OBJ = $(SOURCES:.f90=.o)
 
@@ -35,10 +35,10 @@ libnwtc.a : $(OBJ)
 	ranlib libnwtc.a
 
 ModuleFluid_Types.f90 : ExampleModule.f90
-	../../FAST/Registry/Source/registry.exe -Dregistry_modulefluid ExampleModule.f90
+	../../../FAST/Registry/Source/registry.exe -Dregistry_modulefluid ExampleModule.f90
 
 ModuleStructure_Types.f90 : ExampleModule.f90
-	../../FAST/Registry/Source/registry.exe -Dregistry_modulestructure ExampleModule.f90
+	../../../FAST/Registry/Source/registry.exe -Dregistry_modulestructure ExampleModule.f90
 
 clean clena:
 	/bin/rm -f *.o *.mod *.a ModuleFluid_Types.f90 ModuleStructure_Types.f90
