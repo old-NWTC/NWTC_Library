@@ -34,6 +34,11 @@ LIB_SOURCES =             \
 	ModMesh_Mapping.f90    \
 	NWTC_Library.f90
 
+NETLIB_SOURCES=            \
+	NWTC_ScaLAPACK.f90      \
+	NWTC_LAPACK.f90         \
+	DLASRT2.f               \
+	SLASRT2.f
 
 
    #  Dependency rules.
@@ -44,5 +49,8 @@ NWTC_IO.obj:             NWTC_Library_Types.obj
 NWTC_Num.obj:            NWTC_IO.obj
 ModMesh_Types.obj:       NWTC_Num.obj
 ModMesh.obj:             ModMesh_Types.obj
-ModMesh_Mapping.obj:     ModMesh.obj
+ModMesh_Mapping.obj:     ModMesh.obj NWTC_LAPACK.obj
 NWTC_Library.obj:        ModMesh.obj  ModMesh_Mapping.obj
+
+NWTC_LAPACK.obj:         NWTC_Base.obj
+NWTC_ScaLAPACK.obj:      NWTC_Base.obj DLASRT2.obj SLASRT2.obj
