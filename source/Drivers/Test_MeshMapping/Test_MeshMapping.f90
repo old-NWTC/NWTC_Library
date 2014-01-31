@@ -59,7 +59,7 @@ PROGRAM Test_TestMeshMapping
    
    !call wrscr( NewLine//'Creating two meshes with siblings and writing to binary files.'//NewLine//NewLine )
    
-   DO TestNumber=1,10 !1,9
+   DO TestNumber=1,11 !1,9
 
       print *, '---------------------------------------------------------------'
       print *, '   Test ', TestNumber
@@ -107,6 +107,8 @@ PROGRAM Test_TestMeshMapping
          CALL CreateOutputMeshes_Test9()
       CASE(10) !monopile (point-to-point)
          CALL CreateOutputMeshes_Test10()
+      CASE(11) 
+         CALL CreateOutputMeshes_Test11()
       END SELECT
    
       WRITE(BinOutputName,'(A,A,A)') 'Test', TRIM(Num2LStr(TestNumber)),'Meshes.bin'
@@ -1393,6 +1395,127 @@ Mesh1_O%TranslationDisp = 0
          
    
    END subroutine CreateOutputMeshes_Test10
+   ! ..............................................
+   subroutine CreateOutputMeshes_Test11
+
+      
+   
+      Mesh1Type = ELEMENT_Line2
+      Mesh2Type = ELEMENT_Line2
+            
+      !.........................
+      ! Mesh1 (Output: Motions)
+      !.........................
+      
+      Nnodes = 10
+            
+      CALL MeshCreate( BlankMesh          = mesh1_O           &
+                       , IOS              = COMPONENT_OUTPUT  &
+                       , NNodes           = NNodes            &
+                       , Orientation      = .TRUE.            &
+                       , TranslationDisp  = .TRUE.            &
+                       , TranslationVel   = .TRUE.            &
+                       , RotationVel      = .TRUE.            &
+                       , TranslationAcc   = .TRUE.            &
+                       , RotationAcc      = .TRUE.            &                                
+                       , ErrStat          = ErrStat           &
+                       , ErrMess          = ErrMsg            )
+      
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+
+                                    
+      do j=1,NNodes 
+            ! place nodes in a line
+         CALL MeshPositionNode ( mesh1_O, j, (/0.0_ReKi, 0.0_ReKi, 0.0_ReKi /), ErrStat, ErrMsg )     
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                      
+      END DO   
+      mesh1_O%Position(3,:) = (/0., 0.5, 1.5, 2., 4., 4.1, 5., 8., 8.5, 10. /)
+
+      do j=2,NNodes 
+         CALL MeshConstructElement ( mesh1_O, ELEMENT_LINE2, ErrStat, ErrMsg, j-1, j )
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                     
+      end do ! 
+            
+      CALL MeshCommit ( mesh1_O, ErrStat, ErrMsg )   
+      IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg)) 
+      if (ErrStat >= AbortErrLev) CALL ProgAbort("Error creating Mesh1 output for test 9.")
+
+      !..............
+      ! initialize output fields:
+      !..............      
+      
+      do j=1,Mesh1_O%NNodes
+      
+         Angle = 0      
+   !      Angle = (20*j)*D2R      
+    !     Angle = (20)*D2R      
+         !note this "looks" like the transpose, but isn't
+         Mesh1_O%Orientation(:,1,j) = (/  1.0,       0.0 ,            0.0 /)
+         Mesh1_O%Orientation(:,2,j) = (/  0.0_ReKi, COS(Angle), -1.*SIN(Angle) /)
+         Mesh1_O%Orientation(:,3,j) = (/  0.0_ReKi, SIN(Angle),     COS(Angle) /)
+            
+         Mesh1_O%TranslationVel(:,j)  = (/ 1., 0.,  0. /)
+         Mesh1_O%RotationVel(:,j)     = 0.0_ReKi ! (/ 0., 0.5, 0.5 /)*.5
+         Mesh1_O%TranslationAcc(:,j)  = 0.0_ReKi ! (/ 1., 1., 0. /)*.115
+         Mesh1_O%RotationAcc(:,j)     = 0.0_ReKi ! (/ 1., 1., 1. /)*.115
+         
+          Mesh1_O%TranslationDisp(:,J) = 0.0_ReKi !(/ 2., 0.,  0. /)
+      
+      end do
+                    
+               
+      !.........................
+      ! Mesh2 (Output: Loads)
+      !.........................
+                    
+      NNodes = 7   
+      CALL MeshCreate(  BlankMesh       = mesh2_O           &
+                        , IOS           = COMPONENT_OUTPUT  &
+                        , NNodes        = NNodes            &
+                        , Force         = .TRUE.            &
+                        , Moment        = .TRUE.            &
+                        , ErrStat       = ErrStat           &
+                        , ErrMess       = ErrMsg            )   
+            IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+
+      do j=1,NNodes
+           
+         Angle = 0
+         !Angle = (-25. + j*j)*D2R  !note this "looks" like the transpose, but isn't
+         Orientation(:,1) = (/ COS(Angle), -1.*SIN(Angle), 0.0_ReKi /)
+         Orientation(:,2) = (/ SIN(Angle),     COS(Angle), 0.0_ReKi /)
+         Orientation(:,3) = (/      0.,        0.0,        1.0 /)
+      
+            ! place nodes in a line
+         CALL MeshPositionNode ( mesh2_O, j, (/0._ReKi, 0._ReKi, (j-1)*10.0_ReKi/(Nnodes-1) /), ErrStat, ErrMsg, &
+               Orient= Orientation )     
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))            
+
+      END DO
+
+      
+      
+      do j=2,NNodes 
+         CALL MeshConstructElement ( mesh2_O, ELEMENT_LINE2, ErrStat, ErrMsg, j-1, j )
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                     
+      end do !       
+      
+                  
+         ! that's our entire mesh:
+      CALL MeshCommit ( mesh2_O, ErrStat, ErrMsg )   
+      IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))   
+      if (ErrStat >= AbortErrLev) CALL ProgAbort("Error creating Mesh2 output for test 11.")
+         
+      !..............
+      ! initialize output fields:
+      !..............
+      do j=1,Mesh2_O%NNodes
+         Mesh2_O%Force( :,j) = (/  0.0, 1.0, 0.0  /) 
+         Mesh2_O%Moment(:,j) = (/  0.0, 0.0, 0.0  /)
+      end do   
+   
+   
+   END subroutine CreateOutputMeshes_Test11
    
    
 END PROGRAM
