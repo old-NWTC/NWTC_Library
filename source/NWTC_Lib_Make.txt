@@ -19,6 +19,38 @@ else
 endif
 
 
+#ifdef NO_MODMESH
+#-------------------------------
+# if compiling without ModMesh (or LAPACK), use this:
+#-------------------------------
+
+FFLAGS = -DNO_MODMESH
+
+
+LIB_SOURCES =             \
+	$(PREC).f90            \
+	NWTC_Base.f90          \
+	$(SYS_FILE).f90        \
+	NWTC_Library_Types.f90 \
+	NWTC_IO.f90            \
+	NWTC_Num.f90           \
+	NWTC_Library.f90
+
+
+    #  Dependency rules.
+NWTC_Base.obj:           $(PREC).obj
+$(SYS_FILE).obj:         NWTC_Base.obj
+NWTC_Library_Types.obj:  $(SYS_FILE).obj
+NWTC_IO.obj:             NWTC_Library_Types.obj
+NWTC_Num.obj:            NWTC_IO.obj
+NWTC_Library.obj:        NWTC_Num.obj
+
+
+
+#else
+#-------------------------------
+# if compiling WITH ModMesh (and LAPACK), use this:
+#-------------------------------
 
 
    # Source files.
@@ -37,8 +69,8 @@ LIB_SOURCES =             \
 NETLIB_SOURCES=            \
 	NWTC_ScaLAPACK.f90      \
 	NWTC_LAPACK.f90         \
-	DLASRT2.f               \
-	SLASRT2.f
+	dlasrt2.f               \
+	slasrt2.f
 
 
    #  Dependency rules.
@@ -53,4 +85,13 @@ ModMesh_Mapping.obj:     ModMesh.obj NWTC_LAPACK.obj
 NWTC_Library.obj:        ModMesh.obj  ModMesh_Mapping.obj
 
 NWTC_LAPACK.obj:         NWTC_Base.obj
-NWTC_ScaLAPACK.obj:      NWTC_Base.obj DLASRT2.obj SLASRT2.obj
+NWTC_ScaLAPACK.obj:      NWTC_Base.obj dlasrt2.obj slasrt2.obj
+
+
+#endif
+
+
+
+
+
+
