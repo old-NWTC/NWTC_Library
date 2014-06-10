@@ -19,13 +19,9 @@ else
 endif
 
 
-#ifdef NO_MODMESH
 #-------------------------------
-# if compiling without ModMesh (or LAPACK), use this:
+# if compiling without ModMesh_Mapping (or LAPACK), use this:
 #-------------------------------
-
-FFLAGS = -DNO_MODMESH
-
 
 LIB_SOURCES =             \
 	$(PREC).f90            \
@@ -34,6 +30,8 @@ LIB_SOURCES =             \
 	NWTC_Library_Types.f90 \
 	NWTC_IO.f90            \
 	NWTC_Num.f90           \
+	ModMesh_Types.f90      \
+	ModMesh.f90            \
 	NWTC_Library.f90
 
 
@@ -43,13 +41,15 @@ $(SYS_FILE).obj:         NWTC_Base.obj
 NWTC_Library_Types.obj:  $(SYS_FILE).obj
 NWTC_IO.obj:             NWTC_Library_Types.obj
 NWTC_Num.obj:            NWTC_IO.obj
-NWTC_Library.obj:        NWTC_Num.obj
+ModMesh_Types.obj:       NWTC_Num.obj
+ModMesh.obj:             ModMesh_Types.obj
+NWTC_Library.obj:        ModMesh.obj  NWTC_Num.obj
 
 
 
 #else
 #-------------------------------
-# if compiling WITH ModMesh (and LAPACK), use this:
+# if compiling WITH ModMesh_Mapping (and LAPACK), use this:
 #-------------------------------
 
 
@@ -81,12 +81,12 @@ NWTC_IO.obj:             NWTC_Library_Types.obj
 NWTC_Num.obj:            NWTC_IO.obj
 ModMesh_Types.obj:       NWTC_Num.obj
 ModMesh.obj:             ModMesh_Types.obj
-ModMesh_Mapping.obj:     ModMesh.obj NWTC_LAPACK.obj
-NWTC_Library.obj:        ModMesh.obj  ModMesh_Mapping.obj
+NWTC_Library.obj:        ModMesh.obj  NWTC_Num.obj
 
 NWTC_LAPACK.obj:         NWTC_Base.obj
 NWTC_ScaLAPACK.obj:      NWTC_Base.obj dlasrt2.obj slasrt2.obj
 
+ModMesh_Mapping.obj:     ModMesh.obj NWTC_LAPACK.obj
 
 #endif
 
