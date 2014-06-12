@@ -1,0 +1,1109 @@
+
+**************************************** MODULE NWTC_Library ***********************************************************************
+       Compiling Notes:
+       -----------------------------------
+       Your project must include the following files:
+           NWTC_Base.f90
+           NWTC_IO.f90
+           NWTC_Library.f90
+           NWTC_Library_Types.f90
+           NWTC_Num.f90
+           ModMesh.f90
+           ModMesh_Types.f90
+       If you are not compiling with -DNO_MESHMAPPING, your project must include this file:
+           ModMesh_Mapping.f90  (not necessary if compiling with -DNO_MESHMAPPING)
+       Your project must include one, but not both, of the following files:
+           DoubPrec.f90 - for double-precision arithmetic for floating-points variables.  You may have to set a compiler option to have constants use double precision.
+           SingPrec.f90 - for single-precision arithmetic for floating-points variables.
+       Your project must include one, and only one, of the following files:
+           SysIVF.f90           - for Intel Visual Fortran for Windows compiler
+           SysIFL.f90           - for Intel Fortran for Linux compiler
+           SysGnuWin.f90        - for Gnu Fortran for Windows compiler
+           SysGnuLinux.f90      - for Gnu Fortran for Linux compiler
+           SysMatlab.f90        - for Intel Visual Fortran for Windows compiler with Matlab's mex functions for printing
+           SysIVF_Labview.f90   - for Intel Visual Fortran for Windows compiler with references to IFPORT removed and no writing to the screen (uses a file instead)
+       Compilation order for command-line compilation:
+           SingPrec.f90 or DoubPrec.f90
+           NWTC_Base.f90
+           SysIVF.f90 (or other Sys*.f90 file)
+           NWTC_Library_Types.f90
+           NWTC_IO.f90
+           NWTC_Num.f90
+           ModMesh_Types.f90
+           ModMesh.f90
+           ModMesh_Mapping.f90  (remove if compiling with -DNO_MESHMAPPING)
+           NWTC_Library.f90
+       This software uses preprocessor directives, and some lines exceed 132 characters, so you must compile with these options:
+                    Intel:   /fpp /Qmkl:sequential
+                    Gnu:     -x f95-cpp-input -ffree-line-length-none -llapack -lblas
+        note that lapack and blas [binary] libraries must be installed for you to compile the ModMesh_Mapping.f90 file.
+           if you do not wish to use lapack, you can compile using the NO_MESHMAPPING compiler directive:
+                             -DNO_MESHMAPPING
+       Usage notes:
+       -----------------------------------
+       Invoking programs should call NWTC_Init() to initialize data important to the use of the library.  Currently,
+        this is used for the NaN, Inf, and Pi-based constants.
+
+...subroutines/functions........................................................
+SUBROUTINE  NWTC_Init( ProgNameIn, ProgVerIn, EchoLibVer )
+       Initializes use of NWTC library routines.
+       It sets constants (like pi) and opens the console
+       for writing if necessary. If requested, it will also
+       write the NWTC version information to the screen.
+
+**************************************** MODULE Precision **************************************************************************
+       This module stores constants to specify the KIND of variables.
+
+...data.........................................................................
+B1Ki     = SELECTED_INT_KIND(  2 )                                              ! Kind for one-byte whole numbers
+B2Ki     = SELECTED_INT_KIND(  4 )                                              ! Kind for two-byte whole numbers
+B4Ki     = SELECTED_INT_KIND(  9 )                                              ! Kind for four-byte whole numbers
+B8Ki     = SELECTED_INT_KIND( 18 )                                              ! Kind for eight-byte whole numbers
+QuKi     = SELECTED_REAL_KIND( 20, 500 )                                        ! Kind for 16-byte, floating-point numbers
+R8Ki     = SELECTED_REAL_KIND( 14, 300 )                                        ! Kind for eight-byte floating-point numbers
+SiKi     = SELECTED_REAL_KIND(  6,  30 )                                        ! Kind for four-byte, floating-point numbers
+BYTES_IN_SiKi =  4                                                              ! Number of bytes per SiKi number
+BYTES_IN_R8Ki =  8                                                              ! Number of bytes per R8Ki number
+BYTES_IN_QuKi = 16                                                              ! Number of bytes per QuKi number
+IntKi    = B4Ki                                                                 ! Default kind for integers
+ReKi     = SiKi                                                                 ! Default kind for floating-point numbers
+DbKi     = R8Ki                                                                 ! Default kind for double floating-point numbers
+BYTES_IN_INT   = 4                                                              ! Number of bytes per IntKi number    - use SIZEOF()
+BYTES_IN_REAL  = BYTES_IN_SiKi                                                  ! Number of bytes per ReKi number     - use SIZEOF()
+BYTES_IN_DBL   = BYTES_IN_R8Ki                                                  ! Number of bytes per DbKi number     - use SIZEOF()
+
+**************************************** MODULE NWTC_Base **************************************************************************
+       This module stores basic constants and routines that are not system-specific, but may be used in the system-specific routines.
+
+...data.........................................................................
+BITS_IN_ADDR  = C_INTPTR_T*8                                                    ! The number of bits in an address (32-bit or 64-bit).
+ChanLen   = 10                                                                  ! The allowable length of channel names (i.e., width of output columns) in the FAST framework
+NWTC_VerboseComments = .TRUE.                                                   
+ErrID_None   = 0                                                                
+ErrID_Info   = 1                                                                
+ErrID_Warn   = 2                                                                
+ErrID_Severe = 3                                                                
+ErrID_Fatal  = 4                                                                
+AbortErrLev  = ErrID_Fatal                                                      ! Note that this is not a PARAMETER
+
+**************************************** MODULE NWTC_IO ****************************************************************************
+       This module contains I/O-related variables and routines with non-system-specific logic.
+       A list of routines follows the data and type definitions.
+
+...data.........................................................................
+NWTC_Ver = ProgDesc( 'NWTC Subroutine Library', 'v2.03.02a-bjj', '10-June-2014')! The name, version, and date of the NWTC Subroutine Library.
+ExplicitLoose = 1                                                               
+FlgType  = 1                                                                    ! Switch for telling if a variable is a flag.
+NumType  = 2                                                                    ! Switch for telling if a variable is a number.
+StrType  = 3                                                                    ! Switch for telling if a variable is a string.
+FileFmtID_WithTime    = 1                                                       ! ID for FAST Output File Format, specifies that the time channel is included in the output file (use if the output can occur at variable times)
+FileFmtID_WithoutTime = 2                                                       ! ID for FAST Output File Format, specifies that the time channel is not included in the output file (used only with constant time-step output)
+Beep     = .TRUE.                                                               ! Flag that specifies whether or not to beep for error messages and program terminations.
+ProgName = ' '                                                                  ! The name of the calling program. DO NOT USE THIS IN NEW PROGRAMS
+ProgVer  = ' '                                                                  ! The version (including date) of the calling program. DO NOT USE THIS IN NEW PROGRAMS
+Tab      = CHAR( 9 )                                                            ! The tab character.
+NWTC_MaxAryLen = 100                                                            ! the maximum length of arrays that can be printed with the array formats below (used to make sure we don't crash when trying to write too many):
+Ec_StrAryFrmt =              "(15X,A,T30,' - ',A,/,2X,100('""',A,'""',:,1X))"   ! Output format for array of string parameters.
+Ec_StrFrmt    =              "(15X,A,T30,' - ',A,/,2X, A )"                     ! Output format for string parameters
+Ec_ReAryFrmt  =              "(15X,A,T30,' - ',A,/,100(2X,ES11.4e2,:))"         ! Output format for array of real parameters.
+Ec_ReFrmt     = "( 2X, ES11.4e2,2X,A,T30,' - ',A )"                             ! Output format for real parameters
+Ec_LgAryFrmt  =              "(15X,A,T30,' - ',A,/,100(2X,L11,:))"              ! Output format for array of logical parameters.
+Ec_LgFrmt     =      "( 2X, L11,2X,A,T30,' - ',A )"                             ! Output format for logical parameters
+Ec_IntAryFrmt =              "(15X,A,T30,' - ',A,/,100(2X,I11,:))"              ! Output format for array of integer parameters.
+Ec_IntFrmt    =      "( 2X, I11,2X,A,T30,' - ',A )"                             ! Output format for integer parameters
+Ec_Ch11Frmt   =      "( 2X, A11,2X,A,T30,' - ',A )"                             ! Output format for 11-character string parameters
+
+...subroutines/functions........................................................
+SUBROUTINE  AdjRealStr( NumStr )
+       This routine adjusts strings created from real numbers (4, 8, or 16-byte)
+       It removes leading spaces and trailing zeros. It is intended to be called
+       from routines R2LStr4, R2LStr8, and R2LStr16.
+................................................................................
+SUBROUTINE  AllCAry1( Ary, AryDim, Descr, ErrStat, ErrMsg )
+       This routine allocates a 1-D CHARACTER array.
+................................................................................
+SUBROUTINE  AllCAry2( Ary, AryDim1, AryDim2, Descr, ErrStat, ErrMsg )
+       This routine allocates a 2-D CHARACTER array.
+................................................................................
+SUBROUTINE  AllCAry3( Ary, AryDim1, AryDim2, AryDim3, Descr, ErrStat, ErrMsg )
+       This routine allocates a 3-D CHARACTER array.
+................................................................................
+SUBROUTINE  AllI1BAry1( Ary, AryDim, Descr, ErrStat, ErrMsg )
+       This routine allocates a 1-D INTEGER B1Ki array.
+................................................................................
+SUBROUTINE  AllI2BAry1( Ary, AryDim, Descr, ErrStat, ErrMsg )
+       This routine allocates a 1-D INTEGER B2Ki array.
+................................................................................
+SUBROUTINE  AllI4BAry1( Ary, AryDim, Descr, ErrStat, ErrMsg )
+       This routine allocates a 1-D INTEGER B1Ki array.
+................................................................................
+SUBROUTINE  AllIAry2( Ary, AryDim1, AryDim2, Descr, ErrStat, ErrMsg )
+       This routine allocates a 2-D INTEGER array.
+................................................................................
+SUBROUTINE  AllIPAry1( Ary, AryDim, Descr, ErrStat )
+       This routine allocates a 1-D INTEGER array.
+................................................................................
+SUBROUTINE  AllIPAry2( Ary, AryDim1, AryDim2, Descr, ErrStat )
+       This routine allocates a 2-D INTEGER array.
+................................................................................
+SUBROUTINE  AllRPAry2( Ary, AryDim1, AryDim2, Descr, ErrStat )
+       This routine allocates a 2-D REAL array.
+       Argument declarations.
+................................................................................
+SUBROUTINE  AllRPAry3( Ary, AryDim1, AryDim2, AryDim3, Descr, ErrStat )
+       This routine allocates a 3-D REAL array.
+................................................................................
+SUBROUTINE  AllIAry3( Ary, AryDim1, AryDim2, AryDim3, Descr, ErrStat, ErrMsg )
+       This routine allocates a 3-D INTEGER array.
+................................................................................
+SUBROUTINE  AllLAry1( Ary, AryDim, Descr, ErrStat, ErrMsg )
+       This routine allocates a 1-D LOGICAL array.
+................................................................................
+SUBROUTINE  AllLAry2( Ary, AryDim1, AryDim2, Descr, ErrStat, ErrMsg )
+       This routine allocates a 2-D LOGICAL array.
+................................................................................
+SUBROUTINE  AllLAry3( Ary, AryDim1, AryDim2, AryDim3, Descr, ErrStat, ErrMsg )
+       This routine allocates a 3-D LOGICAL array.
+................................................................................
+SUBROUTINE  AllR4Ary1( Ary, AryDim, Descr, ErrStat, ErrMsg )
+       This routine allocates a 1-D 4-byte REAL array.
+................................................................................
+SUBROUTINE  AllR8Ary1( Ary, AryDim, Descr, ErrStat, ErrMsg )
+       This routine allocates a 1-D 8-byte REAL array.
+................................................................................
+SUBROUTINE  AllR16Ary1( Ary, AryDim, Descr, ErrStat, ErrMsg )
+       This routine allocates a 1-D 16-byte REAL array.
+................................................................................
+SUBROUTINE  AllR4Ary2( Ary, AryDim1, AryDim2, Descr, ErrStat, ErrMsg )
+       This routine allocates a 2-D 4-Byte REAL array.
+................................................................................
+SUBROUTINE  AllR8Ary2( Ary, AryDim1, AryDim2, Descr, ErrStat, ErrMsg )
+       This routine allocates a 2-D 8-Byte REAL array.
+................................................................................
+SUBROUTINE  AllR16Ary2( Ary, AryDim1, AryDim2, Descr, ErrStat, ErrMsg )
+       This routine allocates a 2-D 4-Byte REAL array.
+................................................................................
+SUBROUTINE  AllRAry3( Ary, AryDim1, AryDim2, AryDim3, Descr, ErrStat, ErrMsg )
+       This routine allocates a 3-D REAL array.
+................................................................................
+SUBROUTINE  AllRAry4( Ary, AryDim1, AryDim2, AryDim3, AryDim4, Descr, ErrStat, ErrMsg )
+       This routine allocates a 4-D REAL array.
+................................................................................
+SUBROUTINE  AllRAry5( Ary, AryDim1, AryDim2, AryDim3, AryDim4, AryDim5, Descr, ErrStat, ErrMsg )
+       This routine allocates a 5-D REAL array.
+................................................................................
+SUBROUTINE  CheckArgs( InputFile, ErrStat )
+       This subroutine is used to check for command-line arguments.
+................................................................................
+SUBROUTINE  ChkParseData( Words, ExpVarName, FileName, FileLineNum, NameIndx, ErrStat, ErrMsg )
+       This subroutine checks the data to be parsed to make sure it finds
+       the expected variable name and an associated value.
+................................................................................
+SUBROUTINE  ChkRealFmtStr( RealFmt, RealFmtVar, FmtWidth, ErrStat, ErrMsg )
+       Test to make sure we have a valid format string for real numbers.
+................................................................................
+SUBROUTINE  CheckIOS( IOS, Fil, Variable, VarType, TrapErrors, ErrMsg )
+       This routine checks the I/O status and prints either an end-of-file or
+       an invalid-input message, and then aborts the program.
+................................................................................
+SUBROUTINE  Conv2UC( Str )
+       This routine converts all the text in a string to upper case.
+................................................................................
+FUNCTION    CountWords( Line )
+       This subroutine is used to count the number of "words" in a line of text.
+       It uses spaces, tabs, commas, semicolons, single quotes, and double quotes ("whitespace")
+        as word separators.
+................................................................................
+FUNCTION    CurDate(  )
+       This function returns a character string encoded with the date in the form dd-mmm-ccyy.
+................................................................................
+FUNCTION    CurTime(  )
+       This function returns a character string encoded with the time in the form "hh:mm:ss".
+................................................................................
+SUBROUTINE  DispCopyrightLicense( ProgInfo )
+       This routine displays some text about copyright and license.
+................................................................................
+SUBROUTINE  DLLTypePack( InData, ReKiBuf, DbKiBuf, IntKiBuf, ErrStat, ErrMsg, SizeOnly )
+       This routine packs the DLL_Type data into an integer buffer.
+       It is required for the FAST Registry.
+................................................................................
+SUBROUTINE  DLLTypeUnPack( InData, ReKiBuf, DbKiBuf, IntKiBuf, ErrStat, ErrMsg )
+       This routine unpacks the DLL_Type data from an integer buffer.
+       It is required for the FAST Registry.
+................................................................................
+SUBROUTINE  DispNVD0(  )
+       This routine displays the name of the program, its version, and its release date.
+................................................................................
+SUBROUTINE  DispNVD1( ProgInfo, DispNWTCVer )
+       This routine displays the name of the program, its version, and its release date.
+................................................................................
+SUBROUTINE  DispNVD2( Name, Ver )
+       This routine displays the name of the program, its version, and its release date passed in as strings
+       This routine is depricated and for legacy purposes only. Please don't use for any new code (Dec-2012)
+................................................................................
+SUBROUTINE  FindLine( Str, MaxLen, StrEnd )
+       This routine finds one line of text with a maximum length of MaxLen from the Str.
+       It tries to break the line at a blank.
+................................................................................
+SUBROUTINE  GetNewUnit( UnIn, ErrStat, ErrMsg )
+       This routine returns a unit number not currently in use.
+................................................................................
+FUNCTION    GetErrStr( ErrID )
+       This function returns a description of the ErrID code
+................................................................................
+FUNCTION    GetNVD( ProgInfo )
+       This function converts the three strings contained in the ProgDesc
+       data type into a single string listing the program name,
+       version, and release date.
+................................................................................
+SUBROUTINE  GetPath( GivenFil, PathName )
+       Let's parse the path name from the name of the given file.
+       We'll count everything before (and including) the last "\" or "/".
+................................................................................
+SUBROUTINE  GetRoot( GivenFil, RootName )
+       Let's parse the root file name from the name of the given file.
+       We'll count everything after the last period as the extension.
+................................................................................
+SUBROUTINE  GetTokens( Line, NumTok, Tokens, Error )
+       This routine will parse Line for NumTok "tokens" and return them in the Tokens array.
+       This routine differs from GetWords() in that it uses only spaces as token separators.
+................................................................................
+SUBROUTINE  GetWords( Line, Words, NumWords )
+       This subroutine is used to get NumWords "words" from a line of text.
+................................................................................
+SUBROUTINE  InitInpErrs( InputErrors, MaxErrs, ErrStat, ErrMsg )
+       This subroutine parses the specified line of text for AryLen REAL values.
+       Generate an error message if the value is the wrong type.
+................................................................................
+SUBROUTINE  IntAry2Str( IntAry, Str, ErrStat, ErrMsg )
+       This routine converts an ASCII array of integers into an
+       equivalent string (character array).
+       This routine is the inverse of the Str2IntAry() routine.
+................................................................................
+FUNCTION    Int2LStr( Intgr )
+       This function returns a left-adjusted string representing the passed integer.
+................................................................................
+SUBROUTINE  NameOFile( InArg, OutExten, OutFile, ErrStat )
+       Get the name of the input file from the InArgth command-line argument.
+       Remove the extension if there is one, and append OutExten to the end.
+................................................................................
+SUBROUTINE  NormStop(  )
+       This routine performs a normal termination of the program.
+................................................................................
+SUBROUTINE  NWTC_DisplaySyntax( DefaultInputFile, ThisProgName )
+       This routine displays the expected command-line syntax for
+        most software developed at the NWTC.
+................................................................................
+SUBROUTINE  OpenBInpFile( Un, InFile, ErrStat, ErrMsg )
+       This routine opens a binary input file.
+................................................................................
+SUBROUTINE  OpenBOutFile( Un, OutFile, ErrStat, ErrMsg )
+       This routine opens a binary output file with stream access,
+       implemented in standrad Fortran 2003.
+       Valid in gfortran 4.6.1 and IVF 10.1 and later
+................................................................................
+SUBROUTINE  OpenEcho( Un, OutFile, ErrStat, ErrMsg, ProgVer )
+       This routine opens a formatted output file for the echo file.
+................................................................................
+SUBROUTINE  OpenFInpFile( Un, InFile, ErrStat, ErrMsg )
+       This routine opens a formatted input file.
+................................................................................
+SUBROUTINE  OpenFOutFile( Un, OutFile, ErrStat, ErrMsg )
+       This routine opens a formatted output file.
+................................................................................
+SUBROUTINE  OpenFUnkFile( Un, OutFile, FailAbt, Failed, Exists, ErrStat, ErrMsg )
+       This routine opens a formatted output file and returns a flag telling if it already existed.
+................................................................................
+SUBROUTINE  OpenUInBEFile( Un, InFile, RecLen, ErrStat, ErrMsg )
+        This routine opens an unformatted input file of RecLen-byte data records
+        stored in Big Endian format.
+................................................................................
+SUBROUTINE  OpenUInfile( Un, InFile, ErrStat, ErrMsg )
+        This routine opens an unformatted input file.
+................................................................................
+SUBROUTINE  OpenUOutfile( Un, OutFile, ErrStat, ErrMsg )
+        This routine opens an unformatted output file.
+................................................................................
+SUBROUTINE  ParseChVar( FileInfo, LineNum, ExpVarName, ChVar, ErrStat, ErrMsg, UnEc )
+       This subroutine parses the specified line of text for two words.  One should be a
+       the name of a character variable and the other a string.
+       Generate an error message if the value is the wrong type or if only one "word" is found.
+................................................................................
+SUBROUTINE  ParseDbAry( FileInfo, LineNum, AryName, DbAry, AryLen, ErrStat, ErrMsg, UnEc )
+       This subroutine parses the specified line of text for AryLen REAL values.
+       Generate an error message if the value is the wrong type.
+................................................................................
+SUBROUTINE  ParseDbVar( FileInfo, LineNum, ExpVarName, DbVar, ErrStat, ErrMsg, UnEc )
+       This subroutine parses the specified line of text for two words.  One should be a
+       the name of a double-precision variable and the other a REAL value.
+       Generate an error message if the value is the wrong type.
+................................................................................
+SUBROUTINE  ParseInAry( FileInfo, LineNum, AryName, InAry, AryLen, ErrStat, ErrMsg, UnEc )
+       This subroutine parses the specified line of text for AryLen whole numbers.
+       Generate an error message if the value is the wrong type.
+................................................................................
+SUBROUTINE  ParseInclInfo( InclInfo, FileName, RangeBeg, RangeEnd, ErrStat, ErrMsg )
+       This subroutine parses the include information that occurs after a "@" when processing an input file.
+................................................................................
+SUBROUTINE  ParseInVar( FileInfo, LineNum, ExpVarName, InVar, ErrStat, ErrMsg, UnEc )
+       This subroutine parses the specified line of text for two words.  One should be a
+       variable name and the other an INTEGER value.
+       Generate an error message if the value is the wrong type.
+................................................................................
+SUBROUTINE  ParseLoAry( FileInfo, LineNum, AryName, LoAry, AryLen, ErrStat, ErrMsg, UnEc )
+       This subroutine parses the specified line of text for AryLen LOGICAL values.
+       Generate an error message if the value is the wrong type.
+................................................................................
+SUBROUTINE  ParseLoVar( FileInfo, LineNum, ExpVarName, LoVar, ErrStat, ErrMsg, UnEc )
+       This subroutine parses the specified line of text for two words.  One should be a
+       variable name and the other a LOGICAL value.
+       Generate an error message if the value is the wrong type.
+................................................................................
+SUBROUTINE  ParseSiAry( FileInfo, LineNum, AryName, SiAry, AryLen, ErrStat, ErrMsg, UnEc )
+       This subroutine parses the specified line of text for two words.  One should be a
+       variable name and the other a single-precision REAL value.
+       Generate an error message if the value is the wrong type.
+................................................................................
+SUBROUTINE  ParseSiVar( FileInfo, LineNum, ExpVarName, SiVar, ErrStat, ErrMsg, UnEc )
+       This subroutine parses the specified line of text for two words.  One should be a
+       the name of a single-precision variable and the other a REAL value.
+       Generate an error message if the value is the wrong type.
+................................................................................
+FUNCTION    PathIsRelative( GivenFil )
+       Let's determine in the given file name is absolute or relative.
+       We'll consider an absolute path one that satisfies one of the
+       following four criteria:
+           1) It contains ":/"
+           2) It contains ":\"
+           3) It starts with "/"
+           4) It starts with "\"
+       All others are considered relative.
+................................................................................
+SUBROUTINE  PremEOF( Fil, Variable, TrapErrors, ErrMsg )
+       This routine prints out an EOF message and aborts the program.
+................................................................................
+SUBROUTINE  ProcessComFile( TopFileName, FileInfo, ErrStat, ErrMsg )
+       This routine calls ScanComFile and ReadComFile to move non-comments in a set of nested
+       files starting with TopFile into the FileInfo structure.
+................................................................................
+SUBROUTINE  ProgAbort( Message, TrapErrors, TimeWait, ErrLevel )
+       This routine outputs fatal error messages and stops the program.
+................................................................................
+SUBROUTINE  ProgPause(  )
+       This routine pauses the program.
+................................................................................
+SUBROUTINE  ProgWarn( Message )
+       This routine outputs non-fatal warning messages and returns to the calling routine.
+................................................................................
+FUNCTION    R2LStr4( FltNum )
+       This function converts a 4-byte floating point number to
+       a left-aligned string.  It eliminates trailing zeroes
+       and even the decimal point if it is not a fraction.
+................................................................................
+FUNCTION    R2LStr8( FltNum )
+       This function converts a 8-byte floating point number to
+       a left-aligned string.  It eliminates trailing zeroes
+       and even the decimal point if it is not a fraction.
+................................................................................
+FUNCTION    R2LStr16( FltNum )
+       This function converts a 16-byte floating point number to
+       a left-aligned string.  It eliminates trailing zeroes
+       and even the decimal point if it is not a fraction.
+................................................................................
+SUBROUTINE  ReadCAry( UnIn, Fil, CharAry, AryLen, AryName, AryDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a AryLen values separated by whitespace into a character array (either on same line or multiple lines).
+................................................................................
+SUBROUTINE  ReadCAryLines( UnIn, Fil, CharAry, AryLen, AryName, AryDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a AryLen values into a real array from the next AryLen lines of the input file.
+................................................................................
+SUBROUTINE  ReadCom( UnIn, Fil, ComName, ErrStat, ErrMsg, UnEc )
+       This routine reads a comment from the next line of the input file.
+................................................................................
+SUBROUTINE  ReadComFile( FileInfo, FileIndx, AryInd, StartLine, LastLine, ErrStat, ErrMsg )
+       This routine opens and reads the contents of a file with comments and stores the good stuff in the FileInfo structure.
+       You need to call ScanComFile() first to count the number of lines and get the list of files in the recursive tree.
+       This information needs to be stored in the FileInfo structure before calling this routine.
+................................................................................
+SUBROUTINE  ReadCVar( UnIn, Fil, CharVar, VarName, VarDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a single character variable from the next line of the input file.
+................................................................................
+SUBROUTINE  ReadFASTbin( UnIn, Init, FASTdata, ErrLev, ErrMsg )
+       This routine reads the contents of a FAST binary output file (FASTbinFile) and stores it in FASTdata.
+       It is assumed that the name of the binary file is preloaded into FASTdata%File by the calling procedure.
+................................................................................
+SUBROUTINE  ReadIAry( UnIn, Fil, IntAry, AryLen, AryName, AryDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a AryLen values into an integer array from the next AryLen lines of the input file.
+................................................................................
+SUBROUTINE  ReadIVar( UnIn, Fil, IntVar, VarName, VarDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a single integer variable from the next line of the input file.
+................................................................................
+SUBROUTINE  ReadLAry( UnIn, Fil, LogAry, AryLen, AryName, AryDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a AryLen values into an logical array from the next AryLen lines of the input file.
+................................................................................
+SUBROUTINE  ReadLine( UnIn, CommChars, Line, LineLen, ErrStat )
+       This routine reads a line from the specified input file and returns the non-comment
+       portion of the line.
+................................................................................
+SUBROUTINE  ReadLVar( UnIn, Fil, LogVar, VarName, VarDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a single logical variable from the next line of the input file.
+................................................................................
+SUBROUTINE  ReadNum( UnIn, Fil, Word, VarName, ErrStat, ErrMsg )
+       This routine reads a single word from a file and tests to see if it's a pure number (no true or false).
+................................................................................
+SUBROUTINE  ReadOutputList( UnIn, Fil, CharAry, AryLenRead, AryName, AryDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads up to MaxAryLen values from an input file and store them in CharAry(:).
+       These values represent the names of output channels, and they are specified in the format
+       required for OutList(:) in FAST input files.
+       The end of this list is specified with the line beginning with the 3 characters "END".
+................................................................................
+SUBROUTINE  ReadR4Ary( UnIn, Fil, RealAry, AryLen, AryName, AryDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a AryLen values into a 4-byte real array separated by white space
+       (possibly on the same line of the input file).
+................................................................................
+SUBROUTINE  ReadR8Ary( UnIn, Fil, RealAry, AryLen, AryName, AryDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a AryLen values into a 8-byte real array separated by white space
+       (possibly on the same line of the input file).
+................................................................................
+SUBROUTINE  ReadR16Ary( UnIn, Fil, RealAry, AryLen, AryName, AryDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a AryLen values into a 16-byte real array separated by white space
+       (possibly on the same line of the input file).
+................................................................................
+SUBROUTINE  ReadR4AryLines( UnIn, Fil, RealAry, AryLen, AryName, AryDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a AryLen values into a real array from the next AryLen lines of the input file.
+................................................................................
+SUBROUTINE  ReadR8AryLines( UnIn, Fil, RealAry, AryLen, AryName, AryDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a AryLen values into a real array from the next AryLen lines of the input file.
+................................................................................
+SUBROUTINE  ReadR16AryLines( UnIn, Fil, RealAry, AryLen, AryName, AryDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a AryLen values into a real array from the next AryLen lines of the input file.
+................................................................................
+SUBROUTINE  ReadR4Var( UnIn, Fil, RealVar, VarName, VarDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a single double (real) variable from the next line of the input file.
+       New code should call ReadVar instead of directly calling this routine.
+................................................................................
+SUBROUTINE  ReadR8Var( UnIn, Fil, RealVar, VarName, VarDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a single double (real) variable from the next line of the input file.
+       New code should call ReadVar instead of directly calling this routine.
+................................................................................
+SUBROUTINE  ReadR16Var( UnIn, Fil, RealVar, VarName, VarDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a single double (real) variable from the next line of the input file.
+       New code should call ReadVar instead of directly calling this routine.
+................................................................................
+SUBROUTINE  ReadStr( UnIn, Fil, CharVar, VarName, VarDescr, ErrStat, ErrMsg, UnEc )
+       This routine reads a string from the next line of the input file.
+................................................................................
+SUBROUTINE  RemoveNullChar( Str )
+       This routine removes trailing C_NULL characters, which can be present when
+       passing strings between C and Fortran
+................................................................................
+SUBROUTINE  ScanComFile( FirstFile, ThisFile, LastFile, StartLine, LastLine, NumLines, ErrStat, ErrMsg )
+       This routine opens and scans the contents of a file with comments counting non-comment lines.
+       If a line has "@Filename" on a line, it recursively scans that file to add the non-comment lines
+       to the total.
+       This routine is typically called before ReadComFile() to count the number on non-comment lines
+       that will need to be stored.
+       It also adds to a linked list of unique file names that are in the call chain.
+................................................................................
+SUBROUTINE  SetErrStat( ErrStatLcl, ErrMessLcl, ErrStat, ErrMess, RoutineName )
+       This routine sets the error status and error message for a routine
+        that may set non-AbortErrLev errors. It concatenates error messages
+        and has the ability to provide a sort of traceback message of called
+        routines (if this is called consistently).
+        Modules in the FAST framework are recommend to use it.
+................................................................................
+SUBROUTINE  Str2IntAry( Str, IntAry, ErrStat, ErrMsg )
+       This routine converts a string (character array) into an
+       equivalent ASCII array of integers.
+       This routine is the inverse of the IntAry2Str() routine.
+................................................................................
+SUBROUTINE  WaitTime( WaitSecs )
+       This routine pauses program executaion for a specified
+       number of seconds.
+................................................................................
+SUBROUTINE  WrBinFAST( FileName, FileID, DescStr, ChanName, ChanUnit, TimeData, AllOutData, ErrStat, ErrMsg )
+       This subroutine opens a binary file named FileName, and writes a the AllOutData Matrix to a 16-bit packed
+       binary file. A text DescStr is written to the file as well as the text in the ChanName and ChanUnit arrays.
+        The file is closed at the end of this subroutine call (and on error).
+       NOTE: Developers may wish to inquire if the file can be opened at the start of a simulation to ensure that
+             it's available before running the simulation (i.e., don't run a code for a long time only to find out
+             that the file cannot be opened for writing).
+................................................................................
+SUBROUTINE  WrFileNR( Unit, Str )
+       This routine writes out a string to the file connected to Unit without following it with a new line.
+................................................................................
+SUBROUTINE  WrMatrix1R4( A, Un, ReFmt, MatName )
+       This routine writes all the values of a 1-dimensional matrix, A,
+       of 4-byte real numbers to unit Un, using ReFmt for each individual value
+       in the array. If MatName is present, it also preceeds the matrix
+       with "MatName" and the number of rows (length of A) and columns (1).
+       Useful for debugging and/or writing summary files.
+................................................................................
+SUBROUTINE  WrMatrix1R8( A, Un, ReFmt, MatName )
+       This routine writes all the values of a 1-dimensional matrix, A,
+       of 8-byte real numbers to unit Un, using ReFmt for each individual value
+       in the array. If MatName is present, it also preceeds the matrix
+       with "MatName" and the number of rows (length of A) and columns (1).
+       Useful for debugging and/or writing summary files.
+................................................................................
+SUBROUTINE  WrMatrix2R4( A, Un, ReFmt, MatName )
+       This routine writes all the values of a 2-dimensional matrix, A,
+       of 4-byte real numbers to unit Un, using ReFmt for each individual value
+       in the array. If MatName is present, it also preceeds the matrix
+       with "MatName" and the number of rows and columns in A.
+       Useful for debugging and/or writing summary files.
+................................................................................
+SUBROUTINE  WrMatrix2R8( A, Un, ReFmt, MatName )
+       This routine writes all the values of a 2-dimensional matrix, A,
+       of 8-byte real numbers to unit Un, using ReFmt for each individual value
+       in the array. If MatName is present, it also preceeds the matrix
+       with "MatName" and the number of rows and columns in A.
+       Useful for debugging and/or writing summary files.
+................................................................................
+SUBROUTINE  WrML( Str )
+       This routine writes out a string in the middle of a line.
+................................................................................
+SUBROUTINE  WrPr( Str )
+       This routine writes out a prompt to the screen without
+       following it with a new line, though a new line precedes it.
+................................................................................
+SUBROUTINE  WrReAryFileNR( Unit, Ary, Fmt, ErrStat, ErrMsg )
+       This routine writes out a real array to the file connected to Unit without following it with a new line.
+................................................................................
+SUBROUTINE  WrScr( InStr )
+       This routine writes out a string to the screen.
+................................................................................
+SUBROUTINE  WrScr1( Str )
+       This routine writes out a string to the screen after a blank line.
+       This routine is DEPRECATED. Call WrScr directly instead.
+
+**************************************** MODULE NWTC_Num ***************************************************************************
+       This module contains numeric-type routines with non-system-specific logic and references.
+
+...data.........................................................................
+D2R_D                                                                           ! Factor to convert degrees to radians in double precision
+Inf_D                                                                           ! IEEE value for NaN (not-a-number) in double precision
+Inv2Pi_D                                                                        ! 0.5/Pi (1/(2*Pi)) in double precision
+NaN_D                                                                           ! IEEE value for Inf (infinity) in double precision
+Pi_D                                                                            ! Ratio of a circle's circumference to its diameter in double precision
+PiBy2_D                                                                         ! Pi/2 in double precision
+R2D_D                                                                           ! Factor to convert radians to degrees in double precision
+RPM2RPS_D                                                                       ! Factor to convert revolutions per minute to radians per second in double precision
+RPS2RPM_D                                                                       ! Factor to convert radians per second to revolutions per minute in double precision
+TwoByPi_D                                                                       ! 2/Pi in double precision
+TwoPi_D                                                                         ! 2*Pi in double precision
+D2R                                                                             ! Factor to convert degrees to radians
+Inf                                                                             ! IEEE value for NaN (not-a-number)
+Inv2Pi                                                                          ! 0.5/Pi = 1 / (2*pi)
+NaN                                                                             ! IEEE value for Inf (infinity)
+Pi                                                                              ! Ratio of a circle's circumference to its diameter
+PiBy2                                                                           ! Pi/2
+R2D                                                                             ! Factor to convert radians to degrees
+RPM2RPS                                                                         ! Factor to convert revolutions per minute to radians per second
+RPS2RPM                                                                         ! Factor to convert radians per second to revolutions per minute
+TwoByPi                                                                         ! 2/Pi
+TwoPi                                                                           ! 2*Pi
+
+...subroutines/functions........................................................
+SUBROUTINE  AddOrSub2Pi( OldAngle, NewAngle )
+       This routine is used to convert NewAngle to an angle within 2*Pi of
+         OldAngle by adding or subtracting 2*Pi accordingly; it then sets
+         OldAngle equal to NewAngle.  This routine is useful for converting
+         angles returned from a call to the ATAN2() FUNCTION into angles that may
+         exceed the -Pi to Pi limit of ATAN2().  For example, if the nacelle yaw
+         angle was 179deg in the previous time step and the yaw angle increased
+         by 2deg in the new time step, we want the new yaw angle returned from a
+         call to the ATAN2() FUNCTION to be 181deg instead of -179deg.  This
+         routine assumes that the angle change between calls is not more than
+         2*Pi in absolute value.  OldAngle should be SAVEd in the calling
+         routine.
+................................................................................
+SUBROUTINE  BSortReal( RealAry, NumPts )
+       This routine sorts a list of real numbers.  It uses the bubble sort algorithm,
+       which is only suitable for short lists.
+................................................................................
+FUNCTION    Cross_Product( Vector1, Vector2 )
+       This function computes the cross product of two 3-element arrays:
+       Cross_Product = Vector1 X Vector2 (resulting in a vector)
+................................................................................
+SUBROUTINE  CubicSplineInit( AryLen, XAry, YAry, Coef, ErrStat, ErrMsg )
+       This routine calculates the parameters needed to compute a irregularly-spaced natural cubic spline.
+       Natural cubic splines are used in that the curvature at the end points is zero.
+       This routine does not require that the XAry be regularly spaced.
+................................................................................
+SUBROUTINE  CubicSplineInitM( XAry, YAry, Coef, ErrStat, ErrMsg )
+       This routine calculates the parameters needed to compute a irregularly-spaced natural cubic spline.
+       Natural cubic splines are used in that the curvature at the end points is zero.
+       This routine does not require that the XAry be regularly spaced.
+       This version of the routine works with multiple curves that share the same X values.
+................................................................................
+FUNCTION    CubicSplineInterp( X, AryLen, XAry, YAry, Coef, ErrStat, ErrMsg )
+       This routine interpolates a pair of arrays using cubic splines to find the function value at X.
+       One must call CubicSplineInit() first to compute the coefficients of the cubics.
+       This routine does not require that the XAry be regularly spaced.
+................................................................................
+FUNCTION    CubicSplineInterpM( X, XAry, YAry, Coef, ErrStat, ErrMsg )
+       This routine interpolates a pair of arrays using cubic splines to find the function value at X.
+       One must call CubicSplineInit() first to compute the coefficients of the cubics.
+       This routine does not require that the XAry be regularly spaced.
+       This version of the routine works with multiple curves that share the same X values.
+................................................................................
+FUNCTION    EqualRealNos4( ReNum1, ReNum2 )
+       This function compares 2 real numbers and determines if they
+       are "almost" equal, i.e. within some relative tolerance
+       ("Safe Comparisons" suggestion from http://www.lahey.com/float.htm)
+................................................................................
+FUNCTION    EqualRealNos8( ReNum1, ReNum2 )
+       This function compares 2 real numbers and determines if they
+       are "almost" equal, i.e. within some relative tolerance
+       ("Safe Comparisons" suggestion from http://www.lahey.com/float.htm)
+................................................................................
+FUNCTION    EqualRealNos16( ReNum1, ReNum2 )
+       This function compares 2 real numbers and determines if they
+       are "almost" equal, i.e. within some relative tolerance
+       ("Safe Comparisons" suggestion from http://www.lahey.com/float.htm)
+................................................................................
+SUBROUTINE  Eye2( A, ErrStat, ErrMsg )
+       This routine sets the matrix A(:,:) to the identity
+       matrix (all zeros, with ones on the diagonal)
+       Note that this also returns the "pseudo-identity" when A(:,:)
+       is not square (i.e., nr/=nc).
+................................................................................
+SUBROUTINE  Eye3( A, ErrStat, ErrMsg )
+       This routine sets each of the n matries A(:,:,n) to the identity
+       matrix (all zeros, with ones on the diagonal).
+       Note that this also returns the "pseudo-identity" when A(:,:)
+       is not square (i.e., nr/=nc).
+................................................................................
+SUBROUTINE  GaussElim( AugMatIn, NumEq, x, ErrStat, ErrMsg )
+       This routine uses the Gauss-Jordan elimination method for the
+         solution of a given set of simultaneous linear equations.
+       NOTE: this routine works if no pivot points are zero and you
+         don't want the eschelon or reduced eschelon form of the
+         augmented matrix.  The form of the original augmented matrix
+         IS preserved in this call.
+       This routine was originally in FAST.f90.
+       When AugMatIn = [ A b ], this routine returns the solution
+       vector x to the equation Ax = b.
+................................................................................
+SUBROUTINE  GetOffsetReg( Ary, NumPts, Val, Ind, Fract, ErrStat, ErrMsg )
+       Determine index of the point in Ary just below Val and the fractional distance to the next point in the array.
+       The elements of the array are assumed to be regularly spaced.
+................................................................................
+FUNCTION    GetSmllRotAngs( DCMat, ErrStat, ErrMsg )
+       This subroutine computes the angles that make up the input direction cosine matrix, DCMat
+       It is the inverse of SmllRotTrans()
+................................................................................
+SUBROUTINE  GL_Pts( IPt, NPts, Loc, Wt, ErrStat )
+       This funtion returns the non-dimensional (-1:+1) location of the given Gauss-Legendre Quadrature point and its weight.
+       The values came from Carnahan, Brice; Luther, H.A.; Wilkes, James O.  (1969)  "Applied Numerical Methods."
+................................................................................
+FUNCTION    IndexCharAry( CVal, CAry )
+       This funtion returns an integer index such that CAry(IndexCharAry) = CVal. If
+       no element in the array matches CVal, the value -1 is returned.  The routine
+       performs a binary search on the input array to determine if CVal is an
+       element of the array; thus, CAry must be sorted and stored in increasing
+       alphebetical (ASCII) order. The routine does not check that the array is
+       sorted.  The routine assumes that CVal is type CHARACTER and CAry
+       is an array of CHARACTERS.
+................................................................................
+FUNCTION    InterpBinComp( XVal, XAry, YAry, ILo, AryLen )
+       This funtion returns a y-value that corresponds to an input x-value by interpolating into the arrays.
+       It uses a binary interpolation scheme that takes about log(AryLen)/log(2) steps to converge.
+       It returns the first or last YAry() value if XVal is outside the limits of XAry().
+       This routine assumes YAry is COMPLEX.
+................................................................................
+FUNCTION    InterpBinReal( XVal, XAry, YAry, ILo, AryLen )
+       This funtion returns a y-value that corresponds to an input x-value by interpolating into the arrays.
+       It uses a binary interpolation scheme that takes about log(AryLen)/log(2) steps to converge.
+       It returns the first or last YAry() value if XVal is outside the limits of XAry().
+       This routine assumes YAry is REAL.
+................................................................................
+FUNCTION    InterpStpComp( XVal, XAry, YAry, Ind, AryLen )
+       This funtion returns a y-value that corresponds to an input x-value by interpolating into the arrays.
+       It uses the passed index as the starting point and does a stepwise interpolation from there.  This is
+       especially useful when the calling routines save the value from the last time this routine was called
+       for a given case where XVal does not change much from call to call.  When there is no correlation
+       from one interpolation to another, InterpBin() may be a better choice.
+       It returns the first or last YAry() value if XVal is outside the limits of XAry().
+       This routine assumes YAry is COMPLEX.
+................................................................................
+FUNCTION    InterpStpReal( XVal, XAry, YAry, Ind, AryLen )
+       This funtion returns a y-value that corresponds to an input x-value by interpolating into the arrays.
+       It uses the passed index as the starting point and does a stepwise interpolation from there.  This is
+       especially useful when the calling routines save the value from the last time this routine was called
+       for a given case where XVal does not change much from call to call.  When there is no correlation
+       from one interpolation to another, InterpBin() may be a better choice.
+       It returns the first or last YAry() value if XVal is outside the limits of XAry().
+       This routine assumes YAry is REAL.
+................................................................................
+FUNCTION    IsSymmetric( A )
+       This function returns a logical TRUE/FALSE value that indicates
+       if the given (2-dimensional) matrix, A, is symmetric. If A is not
+       square it returns FALSE.
+................................................................................
+SUBROUTINE  LocateBin( XVal, XAry, Ind, AryLen )
+       This subroutine finds the lower-bound index of an input x-value located in an array.
+       On return, Ind has a value such that
+                 XAry(Ind) <= XVal < XAry(Ind+1), with the exceptions that
+                   Ind = 0 when XVal < XAry(1), and
+                Ind = AryLen when XAry(AryLen) <= XVal.
+       It uses a binary interpolation scheme that takes about log(AryLen)/log(2) steps to converge.
+       If the index doesn't change much between calls, LocateStp() may be a better option.
+................................................................................
+SUBROUTINE  LocateStp( XVal, XAry, Ind, AryLen )
+       This subroutine finds the lower-bound index of an input x-value located in an array.
+       On return, Ind has a value such that
+                 XAry(Ind) <= XVal < XAry(Ind+1), with the exceptions that
+                   Ind = 0 when XVal < XAry(1), and
+                Ind = AryLen when XAry(AryLen) <= XVal.
+       It uses the passed index as the starting point and does a stepwise search from there.  This is
+       especially useful when the calling routines save the value from the last time this routine was called
+       for a given case where XVal does not change much from call to call.  When there is no correlation
+       from one interpolation to another, a binary search may be a better choice.
+................................................................................
+FUNCTION    Mean( Ary, AryLen )
+       This routine calculates the mean value of an array.
+................................................................................
+SUBROUTINE  MPi2Pi( Angle )
+       This routine ensures that Angle lies between -pi and pi.
+................................................................................
+SUBROUTINE  RegCubicSplineInit( AryLen, XAry, YAry, DelX, Coef, ErrStat, ErrMsg )
+       This routine calculates the parameters needed to compute a regularly-spaced natural cubic spline.
+       Natural cubic splines are used in that the curvature at the end points is zero.
+       It assumes the XAry values are equally spaced for speed.
+................................................................................
+SUBROUTINE  RegCubicSplineInitM( XAry, YAry, DelX, Coef, ErrStat, ErrMsg )
+       This routine calculates the parameters needed to compute a regularly-spaced natural cubic spline.
+       Natural cubic splines are used in that the curvature at the end points is zero.
+       It assumes the XAry values are equally spaced for speed.
+       This version of the routine works with multiple curves that share the same X values.
+................................................................................
+FUNCTION    RegCubicSplineInterp( X, AryLen, XAry, YAry, DelX, Coef, ErrStat, ErrMsg )
+       This routine interpolates a pair of arrays using cubic splines to find the function value at X.
+       One must call RegCubicSplineInit() first to compute the coefficients of the cubics.
+       This routine requires that the XAry be regularly spaced, which improves performance.
+................................................................................
+FUNCTION    RegCubicSplineInterpM( X, XAry, YAry, DelX, Coef, ErrStat, ErrMsg )
+       This routine interpolates a pair of arrays using cubic splines to find the function value at X.
+       One must call RegCubicSplineInit() first to compute the coefficients of the cubics.
+       This routine requires that the XAry be regularly spaced, which improves performance.
+       This version of the routine works with multiple curves that share the same X values.
+................................................................................
+SUBROUTINE  RombergInt( f, a, b, R, err, eps, ErrStat )
+       This routine is used to integrate funciton f over the interval [a, b]. This routine
+       is useful for sufficiently smooth (e.g., analytic) integrands, integrated over
+       intervals which contain no singularities, and where the endpoints are also nonsingular.
+       f is an external function. For example f(x) = 1 + x.
+         FUNCTION f(x)
+            USE PRECISION
+            IMPLICIT NONE
+            REAL(ReKi) f
+            REAL(ReKi) x
+            f = 1 + x
+            RETURN
+         END FUNCTION f
+................................................................................
+SUBROUTINE  SetConstants(  )
+       This routine computes numeric constants stored in the NWTC Library
+................................................................................
+SUBROUTINE  SmllRotTrans( RotationType, Theta1, Theta2, Theta3, TransMat, ErrTxt, ErrStat, ErrMsg )
+       This routine computes the 3x3 transformation matrix, TransMat,
+         to a coordinate system x (with orthogonal axes x1, x2, x3)
+         resulting from three rotations (Theta1, Theta2, Theta3) about the
+         orthogonal axes (X1, X2, X3) of coordinate system X.  All angles
+         are assummed to be small, as such, the order of rotations does
+         not matter and Euler angles do not need to be used.  This routine
+         is used to compute the transformation matrix (TransMat) between
+         undeflected (X) and deflected (x) coordinate systems.  In matrix
+         form:
+            {x1}   [TransMat(Theta1, ] {X1}
+            {x2} = [         Theta2, ]*{X2}
+            {x3}   [         Theta3 )] {X3}
+       The transformation matrix, TransMat, is the closest orthonormal
+         matrix to the nonorthonormal, but skew-symmetric, Bernoulli-Euler
+         matrix:
+                [   1.0    Theta3 -Theta2 ]
+            A = [ -Theta3   1.0    Theta1 ]
+                [  Theta2 -Theta1   1.0   ]
+         In the Frobenius Norm sense, the closest orthornormal matrix is:
+            TransMat = U*V^T,
+         where the columns of U contain the eigenvectors of A*A^T and the
+         columns of V contain the eigenvectors of A^T*A (^T = transpose).
+         This result comes directly from the Singular Value Decomposition
+         (SVD) of A = U*S*V^T where S is a diagonal matrix containing the
+         singular values of A, which are SQRT( eigenvalues of A*A^T ) =
+         SQRT( eigenvalues of A^T*A ).
+       The algebraic form of the transformation matrix, as implemented
+         below, was derived symbolically by J. Jonkman by computing U*V^T
+         by hand with verification in Mathematica.
+       This routine is the inverse of GetSmllRotAngs()
+................................................................................
+SUBROUTINE  SortUnion( Ary1, N1, Ary2, N2, Ary, N )
+       This routine takes two sorted arrays and finds the sorted union of the two.
+................................................................................
+FUNCTION    StdDevFn( Ary, AryLen, Mean )
+       This routine calculates the standard deviation of a population contained in Ary.
+................................................................................
+SUBROUTINE  Zero2TwoPi( Angle )
+       This routine ensures that Angle lies between 0 and 2*pi.
+
+**************************************** MODULE SysSubs ****************************************************************************
+       This module contains routines with system-specific logic and references, including all references to the console unit, CU.
+       It also contains standard (but not system-specific) routines it uses.
+
+...data.........................................................................
+ConRecL     = 120                                                               ! The record length for console output.
+CU          = 7                                                                 ! The I/O unit for the console.  Unit 6 causes ADAMS to crash.
+MaxWrScrLen = 98                                                                ! The maximum number of characters allowed to be written to a line in WrScr
+NL_Len      = 2                                                                 ! The number of characters used for a new line.
+KBInputOK   = .TRUE.                                                            ! A flag to tell the program that keyboard input is allowed in the environment.
+Endian      = 'BIG_ENDIAN'                                                      ! The internal format of numbers.
+NewLine     = ACHAR(10)                                                         ! The delimiter for New Lines [ Windows is CHAR(13)//CHAR(10); MAC is CHAR(13); Unix is CHAR(10) {CHAR(13)=\r is a line feed, CHAR(10)=\n is a new line}]
+OS_Desc     = 'Intel Visual Fortran for Windows'                                ! Description of the language/OS
+PathSep     = '\'                                                               ! The path separator.
+SwChar      = '/'                                                               ! The switch character for command-line options.
+UnfForm     = 'BINARY'                                                          ! The string to specify unformatted I/O files. (used in OpenUOutFile and OpenUInpFile [see TurbSim's .bin files])
+
+...subroutines/functions........................................................
+FUNCTION    FileSize( Unit )
+       This function calls the portability routine, FSTAT, to obtain the file size
+       in bytes corresponding to a file unit number or returns -1 on error.
+................................................................................
+SUBROUTINE  FlushOut( Unit )
+       This subroutine flushes the buffer on the specified Unit.
+       It is especially useful when printing "running..." type messages.
+................................................................................
+SUBROUTINE  Get_CWD( DirName, Status )
+       This routine retrieves the path of the current working directory.
+................................................................................
+FUNCTION    Is_NaN( DblNum )
+       This routine determines if a REAL(DbKi) variable holds a proper number.
+       BJJ: this routine is used in CRUNCH.
+       It should be replaced with IEEE_IS_NAN in new code, but remains here for
+       backwards compatibility.
+................................................................................
+SUBROUTINE  OpenCon(  )
+       This routine opens the console for standard output.
+................................................................................
+SUBROUTINE  OpenUnfInpBEFile( Un, InFile, RecLen, Error )
+       This routine opens a binary input file with data stored in Big Endian format (created on a UNIX machine.)
+       Data are stored in RecLen-byte records.
+................................................................................
+SUBROUTINE  ProgExit( StatCode )
+       This routine stops the program.  If the compiler supports the EXIT routine,
+       pass the program status to it.  Otherwise, do a STOP.
+................................................................................
+SUBROUTINE  Set_IEEE_Constants( NaN_D, Inf_D, NaN, Inf )
+       routine that sets the values of NaN_D, Inf_D, NaN, Inf (IEEE
+       values for not-a-number and infinity in sindle and double
+       precision) This uses standard F03 intrinsic routines,
+       however Gnu has not yet implemented it, so we've placed this
+       routine in the system-specific code.
+................................................................................
+SUBROUTINE  UsrAlarm(  )
+       This routine generates an alarm to warn the user that something went wrong.
+................................................................................
+SUBROUTINE  WrNR( Str )
+       This routine writes out a string to the screen without following it with a new line.
+................................................................................
+SUBROUTINE  WrOver( Str )
+       This routine writes out a string that overwrites the previous line
+................................................................................
+SUBROUTINE  WriteScr( Str, Frm )
+       This routine writes out a string to the screen.
+................................................................................
+SUBROUTINE  LoadDynamicLib( DLL, ErrStat, ErrMsg )
+       This SUBROUTINE is used to dynamically load a DLL.
+................................................................................
+SUBROUTINE  FreeDynamicLib( DLL, ErrStat, ErrMsg )
+       This SUBROUTINE is used to free a dynamically loaded DLL (loaded in LoadDynamicLib).
+
+**************************************** MODULE NWTC_Library_Types *****************************************************************
+       This module contains all of the user-defined types needed in NWTC_Library. It also contains copy, destroy, pack, and
+       unpack routines associated with each defined data type. This code will be generated by the FAST Registry.
+      ---------------------------------------------------------------------------------------------------------------------------------
+
+...subroutines/functions........................................................
+SUBROUTINE  NWTC_Library_Copyprogdesc( SrcprogdescData, DstprogdescData, CtrlCode, ErrStat, ErrMsg )
+................................................................................
+SUBROUTINE  NWTC_Library_Destroyprogdesc( progdescData, ErrStat, ErrMsg )
+................................................................................
+SUBROUTINE  NWTC_Library_Packprogdesc( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+................................................................................
+SUBROUTINE  NWTC_Library_UnPackprogdesc( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+................................................................................
+SUBROUTINE  NWTC_Library_Copyfastdatatype( SrcfastdatatypeData, DstfastdatatypeData, CtrlCode, ErrStat, ErrMsg )
+................................................................................
+SUBROUTINE  NWTC_Library_Destroyfastdatatype( fastdatatypeData, ErrStat, ErrMsg )
+................................................................................
+SUBROUTINE  NWTC_Library_Packfastdatatype( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+................................................................................
+SUBROUTINE  NWTC_Library_UnPackfastdatatype( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+................................................................................
+SUBROUTINE  NWTC_Library_Copyoutparmtype( SrcoutparmtypeData, DstoutparmtypeData, CtrlCode, ErrStat, ErrMsg )
+................................................................................
+SUBROUTINE  NWTC_Library_Destroyoutparmtype( outparmtypeData, ErrStat, ErrMsg )
+................................................................................
+SUBROUTINE  NWTC_Library_Packoutparmtype( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+................................................................................
+SUBROUTINE  NWTC_Library_UnPackoutparmtype( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+................................................................................
+SUBROUTINE  NWTC_Library_Copyfileinfotype( SrcfileinfotypeData, DstfileinfotypeData, CtrlCode, ErrStat, ErrMsg )
+................................................................................
+SUBROUTINE  NWTC_Library_Destroyfileinfotype( fileinfotypeData, ErrStat, ErrMsg )
+................................................................................
+SUBROUTINE  NWTC_Library_Packfileinfotype( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+................................................................................
+SUBROUTINE  NWTC_Library_UnPackfileinfotype( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+
+**************************************** MODULE ModMesh ****************************************************************************
+       The modules ModMesh and ModMesh_Types provide data structures and subroutines for representing and manipulating meshes
+       and meshed data in the FAST modular framework.
+       A mesh is comprised of a set of “nodes” (simple points in space) together with information specifying how they are connected
+       to form “elements”  representing spatial boundaries between components. ModMesh and ModMesh_Types define point, line, surface,
+       and volume elements in a standard isoparametric mapping from finite element analysis. Currently only points and straight line
+       (line2) elements are implemented.
+       Associated with a mesh are one or more “fields” that represent the values of variables or “degrees of freedom” at each node.
+       A mesh always has a named “Position” that specifies the location in three-dimensional space as an Xi,Yi,Zi triplet of each node
+       and a field named “RefOrientation” that specifies the orientation (as a direction cosine matrix) of the node.
+       The ModMesh_Types module predefines a number of other fields of triples representing velocities, forces, and moments as well as
+       a field of nine values representing a direction cosine matrix.
+       The operations on meshes defined in the ModMesh module are creation, spatio-location of nodes, construction, committing the
+       mesh definition, initialization of fields, accessing field data, updating field data, copying, deallocating, and destroying meshes.
+       See https://wind.nrel.gov/designcodes/simulators/developers/docs/ProgrammingHandbook_Mod20130326.pdf
+
+...data.........................................................................
+BUMPUP = 64                                                                     ! do not set to less than 2
+
+...subroutines/functions........................................................
+SUBROUTINE  MeshWrBin( UnIn, M, ErrStat, ErrMsg, FileName )
+       This routine writes mesh information in binary form. If UnIn is < 0, it gets a new unit number and opens the file,
+       otherwise the file is appended. It is up to the caller of this routine to close the file when it's finished.
+................................................................................
+SUBROUTINE  MeshPrintInfo( U, M, N )
+       This routine writes mesh information in text form. If is used for debugging.
+................................................................................
+SUBROUTINE  MeshCreate( BlankMesh, IOS, Nnodes, ErrStat, ErrMess )
+       in the mesh. These are always dimensioned npoints           &
+................................................................................
+SUBROUTINE  MeshDestroy( Mesh, ErrStat, ErrMess, IgnoreSibling )
+       Destroy the given mesh and deallocate all of its data. If the optional IgnoreSibling argument
+       is set to TRUE, destroying a sibling in a set has no effect on the other siblings other than
+       to remove the victim from the list of siblings. If IgnoreSibling is omitted or is set to FALSE,
+       all of the other siblings in the set will be destroyed as well.
+................................................................................
+SUBROUTINE  MeshPack( Mesh, ReBuf, DbBuf, IntBuf, ErrStat, ErrMess, SizeOnly )
+       Given a mesh and allocatable buffers of type INTEGER(IntKi), REAL(ReKi), and REAL(DbKi),
+       return the mesh information compacted into consecutive elements of the corresponding buffers.
+       This would be done to allow subsequent writing of the buffers to a file for restarting later.
+       The sense of the name is “pack the data from the mesh into buffers”. IMPORTANT: MeshPack
+       allocates the three buffers. It is incumbent upon the calling program to deallocate the
+       buffers when they are no longer needed. For sibling meshes, MeshPack should be called
+       separately for each sibling, because the fields allocated with the siblings are separate
+       and unique to each sibling.
+................................................................................
+SUBROUTINE  MeshUnpack( Mesh, Re_Buf, Db_Buf, Int_Buf, ErrStat, ErrMess )
+       Given a blank, uncreated mesh and buffers of type INTEGER(IntKi), REAL(ReKi), and
+       REAL(DbKi), unpack the mesh information from the buffers. This would be done to
+       recreate a mesh after reading in the buffers on a restart of the program. The sense
+       of the name is “unpack the mesh from buffers.” The resulting mesh will be returned
+       in the exact state as when the data in the buffers was packed using MeshPack.
+................................................................................
+SUBROUTINE  MeshCopy( SrcMesh, DestMesh, CtrlCode, ErrStat, ErrMess, IOS, Force, Moment, Orientation, TranslationDisp, TranslationVel, RotationVel, TranslationAcc, RotationAcc, nScalars )
+       Given an existing mesh and a destination mesh, create a completely new copy, a sibling, or
+         update the fields of a second existing mesh from the first mesh. When CtrlCode is
+         MESH_NEWCOPY or MESH_SIBLING, the destination mesh must be a blank, uncreated mesh.
+       If CtrlCode is MESH_NEWCOPY, an entirely new copy of the mesh is created, including all fields,
+         with the same data values as the original, but as an entirely separate copy in memory. The new
+         copy is in the same state as the original—if the original has not been committed, neither is
+         the copy; in this case, an all-new copy of the mesh must be committed separately.
+       If CtrlCode is MESH_SIBLING, the destination mesh is created with the same mesh and position/reference
+         orientation information of the source mesh, and this new sibling is added to the end of the list for
+         the set of siblings. Siblings may have different fields (other than Position and RefOrientation).
+         Therefore, for a sibling, it is necessary, as with MeshCreate, to indicate the fields the sibling
+         will have using optional arguments. Sibling meshes should not be created unless the original mesh
+         has been committed first.
+       If CtrlCode is MESH_UPDATECOPY, all of the allocatable fields of the destination mesh are updated
+         with the values of the fields in the source. (The underlying mesh is untouched.) The mesh and field
+         definitions of the source and destination meshes must match and both must have been already committed.
+         The destination mesh may be an entirely different copy or it may be a sibling of the source mesh.
+................................................................................
+SUBROUTINE  MeshPositionNode( Mesh, Inode, Pos, ErrStat, ErrMess, Orient )
+       For a given node in a mesh, assign the coordinates of the node in the global coordinate space.
+       If an Orient argument is included, the node will also be assigned the specified orientation
+       (orientation is assumed to be the identity matrix if omitted). Returns a non-zero value in
+       ErrStat if Inode is outside the range 1..Nnodes.
+................................................................................
+SUBROUTINE  MeshCommit( Mesh, ErrStat, ErrMess )
+       Given a mesh that has been created, spatio-located, and constructed,
+       commit the definition of the mesh, making it ready for initialization
+       and use. Explicitly committing a mesh provides the opportunity to precompute
+       traversal information, neighbor lists and other information about the mesh.
+       Returns non-zero in value of ErrStat on error.
+................................................................................
+SUBROUTINE  MeshConstructElement_1PT( Mesh, Xelement, ErrStat, ErrMess, P1 )
+       Given a mesh and an element name, construct an point element whose vertex is the
+       node index listed as the remaining argument of the call to MeshConstructElement.
+       Returns a non-zero value on error.
+................................................................................
+SUBROUTINE  MeshConstructElement_2PT( Mesh, Xelement, ErrStat, ErrMess, P1, P2 )
+       Given a mesh and an element name, construct 2-point line (line2) element whose
+       vertices are the node indices listed as the remaining arguments of the call to
+       MeshConstructElement. The adjacency of elements is implied when elements are
+       created that share some of the same nodes. Returns a non-zero value on error.
+................................................................................
+SUBROUTINE  MeshConstructElement_3PT( Mesh, Xelement, ErrStat, ErrMess, P1, P2, P3 )
+................................................................................
+SUBROUTINE  MeshConstructElement_4PT( Mesh, Xelement, ErrStat, ErrMess, P1, P2, P3, P4 )
+................................................................................
+SUBROUTINE  MeshConstructElement_6PT( Mesh, Xelement, ErrStat, ErrMess, P1, P2, P3, P4, P5, P6 )
+................................................................................
+SUBROUTINE  MeshConstructElement_8PT( Mesh, Xelement, ErrStat, ErrMess, P1, P2, P3, P4, P5, P6, P7, P8 )
+................................................................................
+SUBROUTINE  MeshConstructElement_10PT( Mesh, Xelement, ErrStat, ErrMess, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10 )
+................................................................................
+SUBROUTINE  MeshConstructElement_15PT( Mesh, Xelement, ErrStat, ErrMess, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15 )
+................................................................................
+SUBROUTINE  MeshConstructElement_20PT( Mesh, Xelement, ErrStat, ErrMess, P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19, P20 )
+................................................................................
+SUBROUTINE  MeshSplitElement_2PT( Mesh, Xelement, ErrStat, ErrMess, E1, P1 )
+       routine splits a line2 element into two separate elements, using p1 as
+       the new node connecting the two new elements formed from E1
+................................................................................
+SUBROUTINE  MeshNextElement( Mesh, CtrlCode, ErrStat, ErrMess, Ielement, Xelement, ElemRec )
+       Given a control code and a mesh that has been committed, retrieve the next element in the mesh.
+         Used to traverse mesh element by element. On entry, the CtrlCode argument contains a control code:
+         zero indicates start from the beginning, an integer between 1 and Mesh%Nelemlist returns that element,
+         and MESH_NEXT means return the next element in traversal. On exit, CtrlCode contains the status of the
+         traversal in (zero or MESH_NOMOREELEMS). The routine optionally outputs the index of the element in the
+         mesh’s element list, the name of the element (see “Element Names”), and a pointer to the element.
+................................................................................
+SUBROUTINE  MeshExtrapInterp1( u1, u2, tin, u_out, tin_out, ErrStat, ErrMsg )
+       This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
+       values of u (which has values associated with times in t).  Order of the interpolation is 1
+        expressions below based on either
+        f(t) = a
+        f(t) = a + b * t, or
+        f(t) = a + b * t + c * t**2
+        where a, b and c are determined as the solution to
+        f(t1) = u1, f(t2) = u2, f(t3) = u3  (as appropriate)
+................................................................................
+SUBROUTINE  MeshExtrapInterp2( u1, u2, u3, tin, u_out, tin_out, ErrStat, ErrMsg )
+       This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
+       values of u (which has values associated with times in t).  Order of the interpolation is 2.
+        expressions below based on either
+        f(t) = a
+        f(t) = a + b * t, or
+        f(t) = a + b * t + c * t**2
+        where a, b and c are determined as the solution to
+        f(t1) = u1, f(t2) = u2, f(t3) = u3  (as appropriate)
+................................................................................
+SUBROUTINE  MeshExtrapInterp( u, tin, u_out, tin_out, ErrStat, ErrMsg )
+       This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
+       values of u (which has values associated with times in t).  Order of the interpolation is given by the size of u
+        expressions below based on either
+        f(t) = a
+        f(t) = a + b * t, or
+        f(t) = a + b * t + c * t**2
+        where a, b and c are determined as the solution to
+        f(t1) = u1, f(t2) = u2, f(t3) = u3  (as appropriate)
