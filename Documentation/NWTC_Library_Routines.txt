@@ -42,7 +42,9 @@
        Usage notes:
        -----------------------------------
        Invoking programs should call NWTC_Init() to initialize data important to the use of the library.  Currently,
-        this is used for the NaN, Inf, and Pi-based constants.
+        this is used for the NaN, Inf, and Pi-based constants. NWTC_Init also opens the console for writing to the screen.
+        (without this, it is possible [depending on the Sys*.f90 file used] that the screen output will be written to a
+        file called "fort.7")
 
 ...subroutines/functions........................................................
 SUBROUTINE  NWTC_Init( ProgNameIn, ProgVerIn, EchoLibVer )
@@ -91,7 +93,7 @@ AbortErrLev  = ErrID_Fatal                                                      
        A list of routines follows the data and type definitions.
 
 ...data.........................................................................
-NWTC_Ver = ProgDesc( 'NWTC Subroutine Library', 'v2.03.02a-bjj', '10-June-2014')! The name, version, and date of the NWTC Subroutine Library.
+NWTC_Ver = ProgDesc( 'NWTC Subroutine Library', 'v2.03.02a-bjj', '12-June-2014')! The name, version, and date of the NWTC Subroutine Library.
 ExplicitLoose = 1                                                               
 FlgType  = 1                                                                    ! Switch for telling if a variable is a flag.
 NumType  = 2                                                                    ! Switch for telling if a variable is a number.
@@ -765,7 +767,8 @@ FUNCTION    Mean( Ary, AryLen )
        This routine calculates the mean value of an array.
 ................................................................................
 SUBROUTINE  MPi2Pi( Angle )
-       This routine ensures that Angle lies between -pi and pi.
+       This routine is used to convert Angle to an equivalent value
+        between -pi and pi.
 ................................................................................
 SUBROUTINE  RegCubicSplineInit( AryLen, XAry, YAry, DelX, Coef, ErrStat, ErrMsg )
        This routine calculates the parameters needed to compute a regularly-spaced natural cubic spline.
@@ -845,7 +848,8 @@ FUNCTION    StdDevFn( Ary, AryLen, Mean )
        This routine calculates the standard deviation of a population contained in Ary.
 ................................................................................
 SUBROUTINE  Zero2TwoPi( Angle )
-       This routine ensures that Angle lies between 0 and 2*pi.
+       This routine is used to convert Angle to an equivalent value
+        between 0 and 2*pi.
 
 **************************************** MODULE SysSubs ****************************************************************************
        This module contains routines with system-specific logic and references, including all references to the console unit, CU.
@@ -1080,23 +1084,11 @@ SUBROUTINE  MeshNextElement( Mesh, CtrlCode, ErrStat, ErrMess, Ielement, Xelemen
 ................................................................................
 SUBROUTINE  MeshExtrapInterp1( u1, u2, tin, u_out, tin_out, ErrStat, ErrMsg )
        This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
-       values of u (which has values associated with times in t).  Order of the interpolation is 1
-        expressions below based on either
-        f(t) = a
-        f(t) = a + b * t, or
-        f(t) = a + b * t + c * t**2
-        where a, b and c are determined as the solution to
-        f(t1) = u1, f(t2) = u2, f(t3) = u3  (as appropriate)
+       values of u (which has values associated with times in t).  Order of the interpolation is 1.
 ................................................................................
 SUBROUTINE  MeshExtrapInterp2( u1, u2, u3, tin, u_out, tin_out, ErrStat, ErrMsg )
        This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
        values of u (which has values associated with times in t).  Order of the interpolation is 2.
-        expressions below based on either
-        f(t) = a
-        f(t) = a + b * t, or
-        f(t) = a + b * t + c * t**2
-        where a, b and c are determined as the solution to
-        f(t1) = u1, f(t2) = u2, f(t3) = u3  (as appropriate)
 ................................................................................
 SUBROUTINE  MeshExtrapInterp( u, tin, u_out, tin_out, ErrStat, ErrMsg )
        This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time

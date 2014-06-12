@@ -43,3 +43,4 @@ for i=1:length(files);
 end
 
 fclose(fout(2));
+fclose all
