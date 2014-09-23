@@ -80,12 +80,12 @@ BYTES_IN_DBL   = BYTES_IN_R8Ki                                                  
 ...data.........................................................................
 BITS_IN_ADDR  = C_INTPTR_T*8                                                    ! The number of bits in an address (32-bit or 64-bit).
 ChanLen   = 10                                                                  ! The allowable length of channel names (i.e., width of output columns) in the FAST framework
-NWTC_VerboseComments = .TRUE.
-ErrID_None   = 0
-ErrID_Info   = 1
-ErrID_Warn   = 2
-ErrID_Severe = 3
-ErrID_Fatal  = 4
+NWTC_VerboseComments = .TRUE.                                                   
+ErrID_None   = 0                                                                
+ErrID_Info   = 1                                                                
+ErrID_Warn   = 2                                                                
+ErrID_Severe = 3                                                                
+ErrID_Fatal  = 4                                                                
 AbortErrLev  = ErrID_Fatal                                                      ! Note that this is not a PARAMETER
 
 **************************************** MODULE NWTC_IO ****************************************************************************
@@ -93,8 +93,8 @@ AbortErrLev  = ErrID_Fatal                                                      
        A list of routines follows the data and type definitions.
 
 ...data.........................................................................
-NWTC_Ver = ProgDesc( 'NWTC Subroutine Library', 'v2.03.02a-bjj', '12-June-2014')! The name, version, and date of the NWTC Subroutine Library.
-ExplicitLoose = 1
+NWTC_Ver = ProgDesc( 'NWTC Subroutine Library', 'v2.03.03b-bjj', '30-June-2014')! The name, version, and date of the NWTC Subroutine Library.
+ExplicitLoose = 1                                                               
 FlgType  = 1                                                                    ! Switch for telling if a variable is a flag.
 NumType  = 2                                                                    ! Switch for telling if a variable is a number.
 StrType  = 3                                                                    ! Switch for telling if a variable is a string.
@@ -770,6 +770,15 @@ SUBROUTINE  MPi2Pi( Angle )
        This routine is used to convert Angle to an equivalent value
         between -pi and pi.
 ................................................................................
+FUNCTION    PSF( Npsf, NumPrimes, subtract )
+       This routine factors the number N into its primes.  If any of those
+       prime factors is greater than the NumPrimes'th prime, a value of 1
+       is added to N and the new number is factored.  This process is
+       repeated until no prime factors are greater than the NumPrimes'th
+       prime.
+       If subract is .true., we will subtract 1 from the value of N instead
+       of adding it.
+................................................................................
 SUBROUTINE  RegCubicSplineInit( AryLen, XAry, YAry, DelX, Coef, ErrStat, ErrMsg )
        This routine calculates the parameters needed to compute a regularly-spaced natural cubic spline.
        Natural cubic splines are used in that the curvature at the end points is zero.
@@ -850,6 +859,8 @@ FUNCTION    StdDevFn( Ary, AryLen, Mean )
 SUBROUTINE  Zero2TwoPi( Angle )
        This routine is used to convert Angle to an equivalent value
         between 0 and 2*pi.
+................................................................................
+SUBROUTINE  IsoparametricCoords( InCoord, posLo, posHi, isopc )
 
 **************************************** MODULE SysSubs ****************************************************************************
        This module contains routines with system-specific logic and references, including all references to the console unit, CU.
@@ -885,6 +896,18 @@ FUNCTION    Is_NaN( DblNum )
        BJJ: this routine is used in CRUNCH.
        It should be replaced with IEEE_IS_NAN in new code, but remains here for
        backwards compatibility.
+................................................................................
+FUNCTION    NWTC_GammaR4( x )
+       Returns the gamma value of its argument. The result has a value equal
+       to a processor-dependent approximation to the gamma function of x.
+................................................................................
+FUNCTION    NWTC_GammaR8( x )
+       Returns the gamma value of its argument. The result has a value equal
+       to a processor-dependent approximation to the gamma function of x.
+................................................................................
+FUNCTION    NWTC_GammaR16( x )
+       Returns the gamma value of its argument. The result has a value equal
+       to a processor-dependent approximation to the gamma function of x.
 ................................................................................
 SUBROUTINE  OpenCon(  )
        This routine opens the console for standard output.
@@ -1049,6 +1072,16 @@ SUBROUTINE  MeshConstructElement_1PT( Mesh, Xelement, ErrStat, ErrMess, P1 )
        Given a mesh and an element name, construct an point element whose vertex is the
        node index listed as the remaining argument of the call to MeshConstructElement.
        Returns a non-zero value on error.
+................................................................................
+SUBROUTINE  BumpupElementTable_New( Mesh, Xelement, ErrStat, ErrMess )
+       bjj: I am getting weird errors with some models using gfortran (ivf is fine),
+       so I am implementing this method which does not just set a pointer, pointing to
+       a local variable. It actually copies the data twice, but allocates the pointer
+       in the dataype.
+................................................................................
+SUBROUTINE  BumpupElementTable( Mesh, Xelement, ErrStat, ErrMess )
+       This subroutine increases the allocated space for Mesh%ElemTable(Xelement)%Elements
+       if adding a new element will exceed the pre-allocated space.
 ................................................................................
 SUBROUTINE  MeshConstructElement_2PT( Mesh, Xelement, ErrStat, ErrMess, P1, P2 )
        Given a mesh and an element name, construct 2-point line (line2) element whose
