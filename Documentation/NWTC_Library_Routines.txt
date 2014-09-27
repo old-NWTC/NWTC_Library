@@ -93,7 +93,7 @@ AbortErrLev  = ErrID_Fatal                                                      
        A list of routines follows the data and type definitions.
 
 ...data.........................................................................
-NWTC_Ver = ProgDesc( 'NWTC Subroutine Library', 'v2.03.03b-bjj', '30-June-2014')! The name, version, and date of the NWTC Subroutine Library.
+NWTC_Ver = ProgDesc( 'NWTC Subroutine Library', 'v2.04.00a-bjj', '30-Sep-2014') ! The name, version, and date of the NWTC Subroutine Library.
 ExplicitLoose = 1                                                               
 FlgType  = 1                                                                    ! Switch for telling if a variable is a flag.
 NumType  = 2                                                                    ! Switch for telling if a variable is a number.
@@ -194,7 +194,7 @@ SUBROUTINE  AllRAry4( Ary, AryDim1, AryDim2, AryDim3, AryDim4, Descr, ErrStat, E
 SUBROUTINE  AllRAry5( Ary, AryDim1, AryDim2, AryDim3, AryDim4, AryDim5, Descr, ErrStat, ErrMsg )
        This routine allocates a 5-D REAL array.
 ................................................................................
-SUBROUTINE  CheckArgs( InputFile, ErrStat )
+SUBROUTINE  CheckArgs( InputFile, ErrStat, Arg2 )
        This subroutine is used to check for command-line arguments.
 ................................................................................
 SUBROUTINE  ChkParseData( Words, ExpVarName, FileName, FileLineNum, NameIndx, ErrStat, ErrMsg )
