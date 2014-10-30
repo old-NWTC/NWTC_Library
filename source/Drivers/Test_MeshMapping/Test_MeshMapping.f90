@@ -17,6 +17,7 @@ PROGRAM Test_TestMeshMapping
    TYPE(MeshMapType) :: Map_Mod2_O_1PT, Map_Mod1_I_1PT
    
    REAL(ReKi)     :: Orientation(3,3)
+   REAL(ReKi)     :: position(3)
    REAL(ReKi)     :: Angle
    !REAL(DbKi)     :: AngleD
    !
@@ -35,6 +36,8 @@ PROGRAM Test_TestMeshMapping
    CHARACTER(256) :: BinOutputName 
    
    real(reki) :: testAry(4) 
+   real(reKi) :: TmpR4
+   real(DbKi) :: TmpR8
    
    CALL NWTC_Init()
    
@@ -56,10 +59,22 @@ PROGRAM Test_TestMeshMapping
    print *, testAry(1) + testAry(2) + testAry(3) + testAry(4)
    print *, testAry(1) + testAry(3) + testAry(2) + testAry(4)
    
+   !do i=1,8
+   !   TmpR4 = 10.0_ReKi**(-i)      
+   !   print *, 'val = ', TmpR4, '; is equal to zero? ', EqualRealNos( TmpR4, 0.0_ReKi )      
+   !end do
+   !
+   !do i=1,8
+   !   TmpR8 = 10.0_DbKi**(-i)      
+   !   print *, 'val = ', TmpR8, '; is equal to zero? ', EqualRealNos( TmpR8, 0.0_DbKi )     
+   !end do   
+   
+   
+   call testOrientations()
    
    !call wrscr( NewLine//'Creating two meshes with siblings and writing to binary files.'//NewLine//NewLine )
    
-   DO TestNumber=1,11 !1,9
+   DO TestNumber=1,12 !1,9
 
       print *, '---------------------------------------------------------------'
       print *, '   Test ', TestNumber
@@ -109,6 +124,8 @@ PROGRAM Test_TestMeshMapping
          CALL CreateOutputMeshes_Test10()
       CASE(11) 
          CALL CreateOutputMeshes_Test11()
+      CASE(12) 
+         CALL CreateOutputMeshes_Test5Orient
       END SELECT
    
       WRITE(BinOutputName,'(A,A,A)') 'Test', TRIM(Num2LStr(TestNumber)),'Meshes.bin'
@@ -173,7 +190,7 @@ PROGRAM Test_TestMeshMapping
       ELSEIF ( Mesh1Type == ELEMENT_LINE2 ) THEN                                                                  
          IF ( Mesh2Type == ELEMENT_LINE2 ) THEN                                                                   
             CALL Transfer_Line2_to_Line2( Mesh1_O, Mesh2_I, Map_Mod1_Mod2, ErrStat, ErrMsg );                     IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))   
-            if (TestNumber == 5 ) call InitTest5Loads()
+            if (TestNumber == 5 .or. TestNumber == 12 ) call InitTest5Loads()
             CALL Transfer_Line2_to_Line2( Mesh2_O, Mesh1_I, Map_Mod2_Mod1, ErrStat, ErrMsg, Mesh2_I, Mesh1_O );   IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))        
          ELSEIF ( Mesh2Type == ELEMENT_POINT ) THEN        
             CALL Transfer_Line2_to_Point( Mesh1_O, Mesh2_I, Map_Mod1_Mod2, ErrStat, ErrMsg );                     IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))                  
@@ -198,7 +215,6 @@ PROGRAM Test_TestMeshMapping
       CALL MeshMapWrBin( un_out, Mesh2_O, Mesh1_I, Map_Mod2_Mod1, ErrStat, ErrMsg, BinOutputName );  IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg)) 
       !close( un_out )
   
-
       ! ..............................................................................................................................   
       ! map the loads from the transfer to a single point to verify the two modules have the same total loads:
       ! ..............................................................................................................................   
@@ -375,7 +391,8 @@ contains
       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
          
          
-      CALL MeshPositionNode ( mesh1_I_1PT, 1, (/0.0_ReKi, 0.0_ReKi, 0.0_ReKi/), ErrStat, ErrMsg ) ; IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))             
+      position = (/0.0_ReKi, 0.0_ReKi, 0.0_ReKi/)
+      CALL MeshPositionNode ( mesh1_I_1PT, 1, position, ErrStat, ErrMsg ) ; IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))             
 
       CALL MeshConstructElement ( mesh1_I_1PT, ELEMENT_POINT, ErrStat, ErrMsg, 1 );                 IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                     
                   
@@ -426,7 +443,8 @@ contains
                                     
       do j=1,NNodes 
             ! place nodes in a line
-         CALL MeshPositionNode ( mesh1_O, j, (/0.0_ReKi, 0.0_ReKi, 1.0_ReKi*(j-1) /), ErrStat, ErrMsg )     
+         position = (/0.0_ReKi, 0.0_ReKi, 1.0_ReKi*(j-1) /)
+         CALL MeshPositionNode ( mesh1_O, j, position, ErrStat, ErrMsg )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))             
 
          CALL MeshConstructElement ( mesh1_O, ELEMENT_POINT, ErrStat, ErrMsg, j )
@@ -448,9 +466,7 @@ contains
    !      Angle = (20*j)*D2R      
          Angle = (20)*D2R      
          !note this "looks" like the transpose, but isn't
-         Mesh1_O%Orientation(:,1,j) = (/  1.0_ReKi,       0.0_ReKi ,       0.0_ReKi /)
-         Mesh1_O%Orientation(:,2,j) = (/  0.0_ReKi,      COS(Angle), -1.*SIN(Angle) /)
-         Mesh1_O%Orientation(:,3,j) = (/  0.0_ReKi,      SIN(Angle),     COS(Angle) /)
+         Mesh1_O%Orientation(:,:,j) = GetDCM(Angle, 1)
             
          Mesh1_O%TranslationDisp(:,j) = (/ 2.00, 0.,  0. /)
          Mesh1_O%TranslationVel(:,j)  = (/ 0.5,  0.0, 0.0 /)
@@ -486,7 +502,8 @@ contains
          Orientation(:,3) = (/      0.,        0.0,        1.0 /)
       
             ! place nodes in a line
-         CALL MeshPositionNode ( mesh2_O, j, (/0.0_ReKi, 0.0_ReKi, dz*(j-1) /), ErrStat, ErrMsg, &
+         position = (/0.0_ReKi, 0.0_ReKi, dz*(j-1) /)
+         CALL MeshPositionNode ( mesh2_O, j, position, ErrStat, ErrMsg, &
                Orient= Orientation )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
    
@@ -675,14 +692,16 @@ contains
             
       ! horizontal line:            
       DO j=1,NumHorizNodes 
-         CALL MeshPositionNode ( ThisMesh, j, (/dx*(j-ConnectionNode), 0.0_ReKi, 0.0_ReKi  /), ErrStat, ErrMsg )     
+         position = (/dx*(j-ConnectionNode), 0.0_ReKi, 0.0_ReKi  /)
+         CALL MeshPositionNode ( ThisMesh, j, position, ErrStat, ErrMsg )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))             
       END DO   
       
       
       ! vertical line:
       DO j=(NumHorizNodes+1),ThisMesh%Nnodes
-         CALL MeshPositionNode ( ThisMesh, j, (/0.0_ReKi, 0.0_ReKi, dz*(j-NumHorizNodes)  /), ErrStat, ErrMsg )     
+         position = (/0.0_ReKi, 0.0_ReKi, dz*(j-NumHorizNodes)  /)
+         CALL MeshPositionNode ( ThisMesh, j, position, ErrStat, ErrMsg )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))             
       END DO                  
    
@@ -741,7 +760,8 @@ contains
                                     
       do j=1,NNodes 
             ! place nodes in a line
-         CALL MeshPositionNode ( mesh1_O, j, (/0.0_ReKi, 0.0_ReKi, 1.0_ReKi*(j-1)/(Nnodes-1) /), ErrStat, ErrMsg )     
+         position = (/0.0_ReKi, 0.0_ReKi, 1.0_ReKi*(j-1)/(Nnodes-1) /)
+         CALL MeshPositionNode ( mesh1_O, j, position, ErrStat, ErrMsg )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                      
       END DO   
 
@@ -805,7 +825,8 @@ contains
       
             ! place nodes in a line
          z = (j-1.0)/(NNodes-1.0)
-         CALL MeshPositionNode ( mesh2_O, j, (/(sqrt(3.0)/3.0)*z-(sqrt(3.0)/6.0), 0.0_ReKi, z /), ErrStat, ErrMsg, &
+         position = (/(sqrt(3.0)/3.0)*z-(sqrt(3.0)/6.0), 0.0_ReKi, z /)
+         CALL MeshPositionNode ( mesh2_O, j, position, ErrStat, ErrMsg, &
                Orient= Orientation )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))        
 
@@ -845,6 +866,128 @@ contains
          Mesh2_O%Moment(:,j) = 0.0 ! (/  0.0, 0.0, 0.5  /)*(-j*0.0)
       end do   
    end subroutine InitTest5Loads   
+   subroutine CreateOutputMeshes_Test5Orient
+   
+      real(reki) :: z
+      real(reki) :: DCM(3,3)
+      
+      
+      Mesh1Type = ELEMENT_LINE2
+      Mesh2Type = ELEMENT_LINE2
+      
+      !.........................
+      ! Mesh1 (Output: Motions)
+      !.........................
+      
+      Nnodes = 5            
+      CALL MeshCreate( BlankMesh          = mesh1_O           &
+                       , IOS              = COMPONENT_OUTPUT  &
+                       , NNodes           = NNodes            &
+                       , Orientation      = .TRUE.            &
+                       , TranslationDisp  = .TRUE.            &
+                       , TranslationVel   = .TRUE.            &
+                       , RotationVel      = .TRUE.            &
+                       , TranslationAcc   = .TRUE.            &
+                       , RotationAcc      = .TRUE.            &                                
+                       , ErrStat          = ErrStat           &
+                       , ErrMess          = ErrMsg            )
+      
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+
+                                    
+      do j=1,NNodes 
+            ! place nodes in a line
+            
+         position = (/0.0_ReKi, 0.0_ReKi, 1.0_ReKi*(j-1)/(Nnodes-1) /)          
+         
+         CALL MeshPositionNode ( mesh1_O, j, position, ErrStat, ErrMsg, orient=orientation )     
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                      
+      END DO   
+
+
+      do j=2,NNodes 
+         CALL MeshConstructElement ( mesh1_O, ELEMENT_LINE2, ErrStat, ErrMsg, J-1, j )
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                     
+      end do
+      
+      
+      CALL MeshCommit ( mesh1_O, ErrStat, ErrMsg )   
+      IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg)) 
+      if (ErrStat >= AbortErrLev) CALL ProgAbort("Error creating Mesh1 output for test 3.")
+
+      !..............
+      ! initialize output fields:
+      !..............      
+      
+      do j=1,Mesh1_O%NNodes
+      
+         !Angle = 0      
+         Angle = 45.0_ReKi*Mesh1_O%Position(3,j)*D2R
+         Mesh1_O%Orientation(:,:,j) = GetDCM(Angle,2)
+                              
+         Mesh1_O%TranslationDisp(:,j) = (/ 2.*(1.0-COS(Angle)), 0._ReKi, 2.0*SIN(Angle)-Mesh1_O%Position(3,j) /)
+
+         Mesh1_O%TranslationVel( :,j) = Mesh1_O%TranslationDisp(:,j)*1.5
+         Mesh1_O%RotationVel(:,j)     = (/ 0.0_ReKi, Angle, 0.0_ReKi /)*1.5
+         Mesh1_O%TranslationAcc(:,j)  = 0.0_ReKi 
+         Mesh1_O%RotationAcc(:,j)     = 0.0_ReKi
+                           
+      end do
+      
+               
+      !.........................
+      ! Mesh2 (Output: Loads)
+      !.........................
+                 
+      NNodes = 8
+   
+      CALL MeshCreate(  BlankMesh       = mesh2_O           &
+                        , IOS           = COMPONENT_OUTPUT  &
+                        , NNodes        = NNodes            &
+                        , Force         = .TRUE.            &
+                        , Moment        = .TRUE.            &
+                        , ErrStat       = ErrStat           &
+                        , ErrMess       = ErrMsg            )   
+            IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+
+      do j=1,NNodes
+                  
+         Angle = 30.*D2R  !note this "looks" like the transpose, but isn't      
+         DCM = GetDCM(Angle,2)
+         
+            ! place nodes in a line
+         z = (j-1.0)/(NNodes-1.0)
+         position = (/(sqrt(3.0)/3.0)*z-(sqrt(3.0)/6.0), 0.0_ReKi, z /)
+         CALL MeshPositionNode ( mesh2_O, j, position, ErrStat, ErrMsg, Orient=DCM )     
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))        
+
+      END DO
+      
+      do j=2,NNodes 
+         CALL MeshConstructElement ( mesh2_O, ELEMENT_LINE2, ErrStat, ErrMsg, J-1, j )
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                     
+      end do      
+                  
+         ! that's our entire mesh:
+      CALL MeshCommit ( mesh2_O, ErrStat, ErrMsg )   
+      IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))   
+      if (ErrStat >= AbortErrLev) CALL ProgAbort("Error creating Mesh2 output for test 1.")
+         
+      !..............
+      ! initialize output fields:
+      !..............
+      ! This is done in another subroutine
+      
+      !do j=1,Mesh2_O%NNodes
+      !   Mesh2_I%Orientation(:,:,j)
+      !   
+      !   Mesh2_O%Force( :,j) = Mesh2_I%Orientation(:,1,j)*5
+      !   Mesh2_O%Moment(:,j) = 0.0 ! (/  0.0, 0.0, 0.5  /)*(-j*0.0)
+      !end do
+      
+
+                  
+   end subroutine CreateOutputMeshes_Test5Orient   
    ! ..............................................   
    subroutine CreateOutputMeshes_Test6()   
    
@@ -877,7 +1020,8 @@ contains
                                     
       do j=1,NNodes 
             ! place nodes in a line
-         CALL MeshPositionNode ( mesh1_O, j, (/0.0_ReKi, 0.0_ReKi, 1.0_ReKi*(j-1) /), ErrStat, ErrMsg )     
+         position = (/0.0_ReKi, 0.0_ReKi, 1.0_ReKi*(j-1) /)
+         CALL MeshPositionNode ( mesh1_O, j, position, ErrStat, ErrMsg )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))             
 
          CALL MeshConstructElement ( mesh1_O, ELEMENT_POINT, ErrStat, ErrMsg, j )
@@ -935,7 +1079,8 @@ contains
          Orientation(:,3) = (/      0.,        0.0,        1.0      /)
       
             ! place nodes in a line
-         CALL MeshPositionNode ( mesh2_O, j, (/0.0_ReKi, 0.0_ReKi, dx*(j-1) /), ErrStat, ErrMsg, &
+         position = (/0.0_ReKi, 0.0_ReKi, dx*(j-1) /)
+         CALL MeshPositionNode ( mesh2_O, j, position, ErrStat, ErrMsg, &
                Orient= Orientation )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))         
 
@@ -1009,7 +1154,8 @@ contains
                                     
       do j=1,NNodes 
             ! place nodes in a line
-         CALL MeshPositionNode ( mesh1_O, j, (/0.0_ReKi, 0.0_ReKi, 1.0_ReKi*(j-1) /), ErrStat, ErrMsg )     
+         position = (/0.0_ReKi, 0.0_ReKi, 1.0_ReKi*(j-1) /)
+         CALL MeshPositionNode ( mesh1_O, j, position, ErrStat, ErrMsg )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))             
          
       END DO   
@@ -1144,7 +1290,8 @@ contains
                                     
       do j=1,NNodes 
             ! place nodes in a line
-         CALL MeshPositionNode ( mesh1_O, j, (/0.0_ReKi, 0.0_ReKi, 1.0_ReKi*(j-1) /), ErrStat, ErrMsg )     
+         position = (/0.0_ReKi, 0.0_ReKi, 1.0_ReKi*(j-1) /)
+         CALL MeshPositionNode ( mesh1_O, j, position, ErrStat, ErrMsg )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                      
       END DO   
 
@@ -1205,7 +1352,8 @@ contains
          Orientation(:,3) = (/      0.,        0.0,        1.0 /)
       
             ! place nodes in a line
-         CALL MeshPositionNode ( mesh2_O, j, (/0.25_ReKi, 0.5_ReKi, 1.0_ReKi*(j-1) + 0.25 /), ErrStat, ErrMsg, &
+         position = (/0.25_ReKi, 0.5_ReKi, 1.0_ReKi*(j-1) + 0.25 /)
+         CALL MeshPositionNode ( mesh2_O, j, position, ErrStat, ErrMsg, &
                Orient= Orientation )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
    
@@ -1265,8 +1413,8 @@ contains
                                     
       do j=1,NNodes 
             ! place nodes in a line
-         
-         CALL MeshPositionNode ( mesh1_O, j, (/0.0_ReKi, 0.0_ReKi, z1(j) /), ErrStat, ErrMsg )     
+         position = (/0.0_ReKi, 0.0_ReKi, z1(j) /)
+         CALL MeshPositionNode ( mesh1_O, j, position, ErrStat, ErrMsg )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                      
       END DO   
 
@@ -1373,7 +1521,8 @@ Mesh1_O%TranslationDisp = 0
       do j=1,NNodes
                  
             ! place nodes in a line
-         CALL MeshPositionNode ( mesh2_O, j, (/0.0_ReKi, 0.0_ReKi, z2(j) /), ErrStat, ErrMsg )     
+         position =      (/0.0_ReKi, 0.0_ReKi, z2(j) /)       
+         CALL MeshPositionNode ( mesh2_O, j, position, ErrStat, ErrMsg )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
    
          CALL MeshConstructElement ( mesh2_O, ELEMENT_POINT, ErrStat, ErrMsg, j )
@@ -1426,7 +1575,8 @@ Mesh1_O%TranslationDisp = 0
                                     
       do j=1,NNodes 
             ! place nodes in a line
-         CALL MeshPositionNode ( mesh1_O, j, (/0.0_ReKi, 0.0_ReKi, 0.0_ReKi /), ErrStat, ErrMsg )     
+         position =  (/0.0_ReKi, 0.0_ReKi, 0.0_ReKi /)           
+         CALL MeshPositionNode ( mesh1_O, j, position, ErrStat, ErrMsg )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                      
       END DO   
       mesh1_O%Position(3,:) = (/0., 0.5, 1.5, 2., 4., 4.1, 5., 8., 8.5, 10. /)
@@ -1438,7 +1588,7 @@ Mesh1_O%TranslationDisp = 0
             
       CALL MeshCommit ( mesh1_O, ErrStat, ErrMsg )   
       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg)) 
-      if (ErrStat >= AbortErrLev) CALL ProgAbort("Error creating Mesh1 output for test 9.")
+      if (ErrStat >= AbortErrLev) CALL ProgAbort("Error creating Mesh1 output for test 11.")
 
       !..............
       ! initialize output fields:
@@ -1487,7 +1637,8 @@ Mesh1_O%TranslationDisp = 0
          Orientation(:,3) = (/      0.,        0.0,        1.0 /)
       
             ! place nodes in a line
-         CALL MeshPositionNode ( mesh2_O, j, (/0._ReKi, 0._ReKi, (j-1)*10.0_ReKi/(Nnodes-1) /), ErrStat, ErrMsg, &
+         position = (/0._ReKi, 0._ReKi, (j-1)*10.0_ReKi/(Nnodes-1) /)
+         CALL MeshPositionNode ( mesh2_O, j, position, ErrStat, ErrMsg, &
                Orient= Orientation )     
          IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))            
 
@@ -1517,6 +1668,69 @@ Mesh1_O%TranslationDisp = 0
    
    END subroutine CreateOutputMeshes_Test11
    
+   ! ..............................................
+   SUBROUTINE TestOrientations()
+   
+      real(reKi)              :: DCM(3,3)
+      real(reKi)              :: angles(3), da, astart
+      !REAL(ReKi), parameter   :: da = 4.0   ! degrees
+      integer                 :: k
+   
+      NNodes = 15
+      astart = -180.0_ReKi
+      
+      da=abs(astart)*2.0_ReKi/(NNodes-1)
+                   
+      do i=1,NNodes 
+         angles(1) = (astart + da*(i-1) )*D2R  
+         do j = 1,NNodes 
+            angles(2) = (astart + da*(j-1) )*D2R  
+            do k = 1,NNodes 
+               angles(3) = (astart + da*(k-1) )*D2R  
+            
+         
+               CALL SmllRotTrans( 'Mesh Orientation Extrapolation', angles(1), angles(2),  angles(3), DCM, 'angle='//trim(num2lstr(angles(1))), ErrStat, ErrMsg )                 
+write(75,'(I10,2(1x,I10),15(1x,F15.5))') i,j,k, angles, DCM
+
+               DCM = DCM_exp ( angles )
+write(76,'(I10,2(1x,I10),15(1x,F15.5))') i,j,k, angles, DCM
+            end do
+         end do         
+      END DO   
+      
+      close(75)
+      close(76)
+   
+   END SUBROUTINE TestOrientations
+   
+   function GetDCM( angle, dim )
+   
+      REAL(ReKi),     intent(in) :: angle
+      REAL(ReKi)                 :: GetDCM(3,3)
+      integer(IntKi), intent(in) :: dim
+      
+                  
+      ! note that these look like the transpose of the matrix, but each line is a column      
+      select case (dim)
+      case( 1 )
+         GetDCM(:,1) = (/  1.0,       0.0 ,            0.0 /)
+         GetDCM(:,2) = (/  0.0_ReKi, COS(Angle), -1.*SIN(Angle) /)
+         GetDCM(:,3) = (/  0.0_ReKi, SIN(Angle),     COS(Angle) /)
+      case (2)
+         GetDCM(:,1) = (/  COS(Angle),   0.0_ReKi,  1.*SIN(Angle) /)
+         GetDCM(:,2) = (/  0.0,               1.0,            0.0 /)
+         GetDCM(:,3) = (/-1.*SIN(Angle), 0.0_ReKi,     COS(Angle) /)
+      case (3)
+         
+         Orientation(:,1) = (/ COS(Angle), -1.*SIN(Angle), 0.0_ReKi /)
+         Orientation(:,2) = (/ SIN(Angle),     COS(Angle), 0.0_ReKi /)
+         Orientation(:,3) = (/      0.,        0.0,        1.0 /)
+         
+      end select
+            
+      
+   end function GetDCM
+   ! ..............................................
    
 END PROGRAM
 
