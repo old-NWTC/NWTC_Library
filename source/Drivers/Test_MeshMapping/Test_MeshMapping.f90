@@ -21,7 +21,7 @@ PROGRAM Test_TestMeshMapping
    REAL(ReKi)     :: Angle
    !REAL(DbKi)     :: AngleD
    !
-   INTEGER :: NNodes, I,J
+   INTEGER :: NNodes, I,J, n1, n2
    
    INTEGER :: un_out        ! UNITS for File I/O
    
@@ -70,11 +70,11 @@ PROGRAM Test_TestMeshMapping
    !end do   
    
    
-   call testOrientations()
+   !call testOrientations()
    
    !call wrscr( NewLine//'Creating two meshes with siblings and writing to binary files.'//NewLine//NewLine )
    
-   DO TestNumber=1,12 !1,9
+   DO TestNumber=13,13 !1,9
 
       print *, '---------------------------------------------------------------'
       print *, '   Test ', TestNumber
@@ -126,6 +126,8 @@ PROGRAM Test_TestMeshMapping
          CALL CreateOutputMeshes_Test11()
       CASE(12) 
          CALL CreateOutputMeshes_Test5Orient
+      CASE(13) 
+         CALL CreateOutputMeshes_Test13
       END SELECT
    
       WRITE(BinOutputName,'(A,A,A)') 'Test', TRIM(Num2LStr(TestNumber)),'Meshes.bin'
@@ -257,6 +259,25 @@ PROGRAM Test_TestMeshMapping
       print *, '     Mesh 1:',mesh1_I_1PT%Moment 
       print *, '     Mesh 2:',mesh2_O_1PT%Moment      
      
+      
+if (TestNumber == 13) then
+
+   !write( 17, '(A)' )
+   DO i=1,mesh2_o%nnodes
+      n1 = mesh1_o%ElemTable(ELEMENT_LINE2)%Elements(Map_Mod1_Mod2%MapMotions(i)%OtherMesh_Element)%ElemNodes(1)
+      n2 = mesh1_o%ElemTable(ELEMENT_LINE2)%Elements(Map_Mod1_Mod2%MapMotions(i)%OtherMesh_Element)%ElemNodes(2)
+      
+      WRITE (17, '(6(F15.5))' ) atan2( mesh2_i%refOrientation(1,2,i ) , mesh2_i%refOrientation(1,1,i ) ),&
+                                atan2( mesh2_i%Orientation(   1,2,i ) , mesh2_i%Orientation(   1,1,i ) ),&
+                                atan2( mesh1_o%refOrientation(1,2,n1) , mesh1_o%refOrientation(1,1,n1) ),&
+                                atan2( mesh1_o%Orientation(   1,2,n1) , mesh1_o%Orientation(   1,1,n1) ),&      
+                                atan2( mesh1_o%refOrientation(1,2,n2) , mesh1_o%refOrientation(1,1,n2) ),&
+                                atan2( mesh1_o%Orientation(   1,2,n2) , mesh1_o%Orientation(   1,1,n2) )
+   end do                              
+   
+
+
+end if
      
 #ifdef MESH_DEBUG  
    
@@ -1667,7 +1688,165 @@ Mesh1_O%TranslationDisp = 0
    
    
    END subroutine CreateOutputMeshes_Test11
+   ! ..............................................
+   subroutine CreateOutputMeshes_Test13
+      real(reki),parameter  :: a = 1.
+      real(reki),parameter  :: omega=2.
+      real(reki)            :: L, LineLen
+      real(reKi)            :: x, dx, yp, omega2, a2
    
+      Mesh1Type = ELEMENT_Line2
+      Mesh2Type = ELEMENT_Line2
+                        
+      
+      !.........................
+      ! Mesh1 (Output: Motions)
+      !.........................
+      
+      Nnodes = 7
+            
+      CALL MeshCreate( BlankMesh          = mesh1_O           &
+                       , IOS              = COMPONENT_OUTPUT  &
+                       , NNodes           = NNodes            &
+                       , Orientation      = .TRUE.            &
+                       , TranslationDisp  = .TRUE.            &
+                       , TranslationVel   = .TRUE.            &
+                       , RotationVel      = .TRUE.            &
+                       , TranslationAcc   = .TRUE.            &
+                       , RotationAcc      = .TRUE.            &                                
+                       , ErrStat          = ErrStat           &
+                       , ErrMess          = ErrMsg            )
+      
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+
+                             
+      L = TwoPi/omega
+      dx = L/(NNodes-1.0_ReKi)   
+      do j=1,NNodes 
+            ! place nodes in a line
+         x        = (j-1.0_ReKi) * dx
+         yp       = a*omega*cos(omega*x)
+         position = (/x, a*sin(omega*x), 0.0_ReKi /)                    
+         Angle    = atan(yp)
+         
+         Orientation(:,1) = (/ COS(Angle), -1.*SIN(Angle), 0.0_ReKi /)
+         Orientation(:,2) = (/ SIN(Angle),     COS(Angle), 0.0_ReKi /)
+         Orientation(:,3) = (/      0.,        0.0,        1.0 /)
+!call wrmatrix(orientation,cu,'f15.5','mesh1 '//trim(num2lstr(j))//' '//trim(num2lstr(angle)))         
+                  
+         CALL MeshPositionNode ( mesh1_O, j, position, ErrStat, ErrMsg, orient=Orientation )     
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                      
+      END DO   
+
+      do j=2,NNodes 
+         CALL MeshConstructElement ( mesh1_O, ELEMENT_LINE2, ErrStat, ErrMsg, j-1, j )
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                     
+      end do ! 
+            
+      CALL MeshCommit ( mesh1_O, ErrStat, ErrMsg )   
+      IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg)) 
+      if (ErrStat >= AbortErrLev) CALL ProgAbort("Error creating Mesh1 output for test 13.")
+
+      LineLen = 0;
+      do j=1,mesh1_O%ElemTable(ELEMENT_Line2)%nelem
+         LineLen = LineLen + mesh1_O%ElemTable(ELEMENT_Line2)%Elements(j)%det_jac*2
+      end do
+      
+print *, 'length of line is =', LineLen      
+      
+      !..............
+      ! initialize output fields:
+      !..............      
+      
+      omega2 = 0.5*omega !0.5*omega
+      a2     = 0.25*a !2*a !
+      L = TwoPi/omega2
+      dx = L/(NNodes-1.0_ReKi)   
+
+      do j=1,Mesh1_O%NNodes
+         
+         x        = (j-1.0_ReKi) * dx 
+         yp       = a2*omega2*cos(omega2*x)
+         position = (/x, a2*sin(omega2*x), 0.0_ReKi /)             
+         Mesh1_O%TranslationDisp(:,J) = position - Mesh1_O%Position(:,j)
+         
+         Angle = atan(yp)
+                  
+         Mesh1_O%Orientation(:,1,j) = (/ COS(Angle), -1.*SIN(Angle), 0.0_ReKi /)
+         Mesh1_O%Orientation(:,2,j) = (/ SIN(Angle),     COS(Angle), 0.0_ReKi /)
+         Mesh1_O%Orientation(:,3,j) = (/      0.,        0.0,        1.0 /)
+         
+         
+         
+         Mesh1_O%TranslationVel(:,j)  = (/ 0., 0.,  0. /)
+         Mesh1_O%RotationVel(:,j)     = 0.0_ReKi ! (/ 0., 0.5, 0.5 /)*.5
+         Mesh1_O%TranslationAcc(:,j)  = 0.0_ReKi ! (/ 1., 1., 0. /)*.115
+         Mesh1_O%RotationAcc(:,j)     = 0.0_ReKi ! (/ 1., 1., 1. /)*.115
+         
+      
+      end do
+                    
+               
+      !.........................
+      ! Mesh2 (Output: Loads)
+      !.........................
+                    
+      NNodes = 31 !19   
+      L = TwoPi/omega      
+      dx = L/(NNodes-1.0_ReKi)   
+      CALL MeshCreate(  BlankMesh       = mesh2_O           &
+                        , IOS           = COMPONENT_OUTPUT  &
+                        , NNodes        = NNodes            &
+                        , Force         = .TRUE.            &
+                        , Moment        = .TRUE.            &
+                        , ErrStat       = ErrStat           &
+                        , ErrMess       = ErrMsg            )   
+            IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))
+
+            
+            
+      do j=1,NNodes
+            ! place nodes in a line
+         x           = (j-1.0_ReKi) * dx
+         yp          = a*omega*cos(omega*x)
+         position    = (/x, a*sin(omega*x), 0.0_ReKi /)                    
+         Angle       = atan(yp) 
+         
+         Orientation(:,1) = (/ COS(Angle), -1.*SIN(Angle), 0.0_ReKi /)
+         Orientation(:,2) = (/ SIN(Angle),     COS(Angle), 0.0_ReKi /)
+         Orientation(:,3) = (/      0.,        0.0,        1.0 /)
+                 
+         CALL MeshPositionNode ( mesh2_O, j, position, ErrStat, ErrMsg, &
+               Orient= Orientation )    
+         
+         !CALL MeshPositionNode ( mesh2_O, j, position, ErrStat, ErrMsg )     
+         
+         
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))            
+
+      END DO
+            
+      do j=2,NNodes 
+         CALL MeshConstructElement ( mesh2_O, ELEMENT_LINE2, ErrStat, ErrMsg, j-1, j )
+         IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))                     
+      end do !       
+      
+                  
+         ! that's our entire mesh:
+      CALL MeshCommit ( mesh2_O, ErrStat, ErrMsg )   
+      IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg))   
+      if (ErrStat >= AbortErrLev) CALL ProgAbort("Error creating Mesh2 output for test 11.")
+         
+      !..............
+      ! initialize output fields:
+      !..............
+      do j=1,Mesh2_O%NNodes
+         Mesh2_O%Force( :,j) = (/  0.0, 0.0, 0.0  /) 
+         Mesh2_O%Moment(:,j) = (/  0.0, 0.0, 0.0  /)
+      end do   
+   
+   
+   END subroutine CreateOutputMeshes_Test13   
    ! ..............................................
    SUBROUTINE TestOrientations()
    
@@ -1720,8 +1899,7 @@ write(76,'(I10,2(1x,I10),15(1x,F15.5))') i,j,k, angles, DCM
          GetDCM(:,1) = (/  COS(Angle),   0.0_ReKi,  1.*SIN(Angle) /)
          GetDCM(:,2) = (/  0.0,               1.0,            0.0 /)
          GetDCM(:,3) = (/-1.*SIN(Angle), 0.0_ReKi,     COS(Angle) /)
-      case (3)
-         
+      case (3)      
          Orientation(:,1) = (/ COS(Angle), -1.*SIN(Angle), 0.0_ReKi /)
          Orientation(:,2) = (/ SIN(Angle),     COS(Angle), 0.0_ReKi /)
          Orientation(:,3) = (/      0.,        0.0,        1.0 /)
