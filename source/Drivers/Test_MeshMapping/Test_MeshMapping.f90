@@ -193,6 +193,7 @@ PROGRAM Test_TestMeshMapping
          IF ( Mesh2Type == ELEMENT_LINE2 ) THEN                                                                   
             CALL Transfer_Line2_to_Line2( Mesh1_O, Mesh2_I, Map_Mod1_Mod2, ErrStat, ErrMsg );                     IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))   
             if (TestNumber == 5 .or. TestNumber == 12 ) call InitTest5Loads()
+            if (TestNumber == 13 ) call InitTest13Loads()
             CALL Transfer_Line2_to_Line2( Mesh2_O, Mesh1_I, Map_Mod2_Mod1, ErrStat, ErrMsg, Mesh2_I, Mesh1_O );   IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))        
          ELSEIF ( Mesh2Type == ELEMENT_POINT ) THEN        
             CALL Transfer_Line2_to_Point( Mesh1_O, Mesh2_I, Map_Mod1_Mod2, ErrStat, ErrMsg );                     IF (ErrStat /= ErrID_None) CALL WrScr("*******"//TRIM(ErrMsg))                  
@@ -1703,7 +1704,7 @@ Mesh1_O%TranslationDisp = 0
       ! Mesh1 (Output: Motions)
       !.........................
       
-      Nnodes = 7
+      Nnodes = 11
             
       CALL MeshCreate( BlankMesh          = mesh1_O           &
                        , IOS              = COMPONENT_OUTPUT  &
@@ -1747,18 +1748,19 @@ Mesh1_O%TranslationDisp = 0
       IF (ErrStat /= ErrID_None) CALL WrScr(TRIM(ErrMsg)) 
       if (ErrStat >= AbortErrLev) CALL ProgAbort("Error creating Mesh1 output for test 13.")
 
-      LineLen = 0;
-      do j=1,mesh1_O%ElemTable(ELEMENT_Line2)%nelem
-         LineLen = LineLen + mesh1_O%ElemTable(ELEMENT_Line2)%Elements(j)%det_jac*2
-      end do
-      
-print *, 'length of line is =', LineLen      
-      
+!      LineLen = 0;
+!      do j=1,mesh1_O%ElemTable(ELEMENT_Line2)%nelem
+!         LineLen = LineLen + mesh1_O%ElemTable(ELEMENT_Line2)%Elements(j)%det_jac*2
+!      end do
+!      
+!print *, 'length of line is =', LineLen      
+LineLen = 5.27038      
+
       !..............
       ! initialize output fields:
       !..............      
       
-      omega2 = 0.5*omega !0.5*omega
+      omega2 = 1.19 !0.5*omega
       a2     = 0.25*a !2*a !
       L = TwoPi/omega2
       dx = L/(NNodes-1.0_ReKi)   
@@ -1770,6 +1772,8 @@ print *, 'length of line is =', LineLen
          position = (/x, a2*sin(omega2*x), 0.0_ReKi /)             
          Mesh1_O%TranslationDisp(:,J) = position - Mesh1_O%Position(:,j)
          
+!print *,j,  Mesh1_O%TranslationDisp(:,J)
+
          Angle = atan(yp)
                   
          Mesh1_O%Orientation(:,1,j) = (/ COS(Angle), -1.*SIN(Angle), 0.0_ReKi /)
@@ -1841,12 +1845,23 @@ print *, 'length of line is =', LineLen
       ! initialize output fields:
       !..............
       do j=1,Mesh2_O%NNodes
-         Mesh2_O%Force( :,j) = (/  0.0, 0.0, 0.0  /) 
+         Mesh2_O%Force( :,j) = (/  0.0, 0.5, 0.0  /) 
          Mesh2_O%Moment(:,j) = (/  0.0, 0.0, 0.0  /)
       end do   
    
    
-   END subroutine CreateOutputMeshes_Test13   
+   END subroutine CreateOutputMeshes_Test13  
+   
+   subroutine InitTest13Loads()
+      !..............
+      ! initialize output fields:
+      !..............
+      do j=1,Mesh2_O%NNodes         
+         Mesh2_O%Force( :,j) = Mesh2_I%Orientation(2,:,j)*0.5 ! (/ 0.0_reKi, Mesh2_I%Orientation(2,2,j)*0.5, 0.0_ReKi /)
+         Mesh2_O%Moment(:,j) = 0.0 ! (/  0.0, 0.0, 0.5  /)*(-j*0.0)
+      end do   
+   end subroutine InitTest13Loads      
+   
    ! ..............................................
    SUBROUTINE TestOrientations()
    
