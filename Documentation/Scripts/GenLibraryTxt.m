@@ -2,7 +2,6 @@
 sourceDir = '../../source/';
 files = {
 'NWTC_Library'
-... %'DoubPrec'
 'SingPrec'
 'NWTC_Base'
 'NWTC_IO'
@@ -11,9 +10,9 @@ files = {
 ... %'SysGnuWin'
 ... %'SysIFL'
 'SysIVF'
-'NWTC_Library_Types'
 ... %'SysIVF_Labview'
 ... %'SysMatlab'
+'NWTC_Library_Types'
 'ModMesh'
 ... %'ModMesh_Types'
 ... %'ModMesh_Mapping'
