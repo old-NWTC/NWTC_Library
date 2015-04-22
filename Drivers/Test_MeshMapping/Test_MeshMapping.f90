@@ -34,12 +34,74 @@ PROGRAM Test_TestMeshMapping
    
    INTEGER :: TestNumber 
    CHARACTER(256) :: BinOutputName 
-   
+  TYPE(ProgDesc) :: Ver
+  
    real(reki) :: testAry(4) 
    real(reKi) :: TmpR4
    real(DbKi) :: TmpR8
    
+   CHARACTER(7) :: TESTME(2)
+   CHARACTER(1024)                       :: CheckpointRoot                          ! Rootname of the checkpoint file
+   CHARACTER(20)                         :: FlagArg                                 ! flag argument from command line
+logical :: LtestAry(3,2) = .false.
+LOGICAL :: LPary(6), mask2(3,2)
+integer :: IPary(6), itestary(3,2)
+
+LtestAry(2:3,2) = .TRUE. 
+mask2=.true.
+
+
    CALL NWTC_Init()
+   
+   TESTME(1) = "TRY THIS"
+   tESTME(2) = "NaN"
+   
+   PRINT *, SIZE(TESTME), LEN(TESTME), LEN(TestMe(1))
+
+   PRINT *, testmE
+   
+   read(TestME(2),*), tmpR4
+   print *, 'real number = ', tmpR4
+   
+   do j=1,2
+   do i=1,len(TestMe)
+      print *, TestMe(j)(i:i)
+   end do   
+   end do
+   
+   Ver    = ProgDesc( 'Test Program', 'v8.11.00a-bjj', '15-Apr-2015' ) ! The version number of this module
+
+   call DispCopyrightLicense( Ver, "This is another comment. I'm going to see that it's really long, hopefuly more than 98 chraacters, so it prints on two lines." )
+   
+   PRINT *,'-------------'   
+   PRINT *, PACK(LtestAry,.true.)
+   LPARY = PACK(LtestAry,.true.)
+   PRINT *, PACK(LPARY,.true.)
+   IPary = transfer(lpary,ipary)
+   PRINT *, PACK(IPary,.true.)
+   
+   
+   ltestary = unpack( TRANSFER( iPary, LPary ), mask2, .true. )
+  print *, ltestary
+  
+   itestary = UNPACK( IPary, mask2, 0 )
+   PRINT *, PACK(itestary,.true.)
+   !LtestAry = TRANSFER( iary, LtestAry)
+   
+   PRINT *, LtestAry
+
+   
+   
+   PRINT *,'-------------'   
+   ProgName = 'FAST'
+   CheckpointRoot = ""
+   CALL CheckArgs( CheckpointRoot, ErrStat, Flag=FlagArg )  ! if ErrStat /= ErrID_None, we'll ignore and deal with the problem when we try to read the input file
+   print *, 'FlagArg       =', TRIM(FlagArg)
+   print *, 'CheckpointRoot=', TRIM(CheckpointRoot)
+   PRINT *,'-------------'
+   
+   
+   STOP
    
    !angle=0.001_ReKi;    print *, angle, equalrealnos(angle, 0.0_ReKi)
    !angle=0.0001_ReKi;   print *, angle, equalrealnos(angle, 0.0_ReKi)
