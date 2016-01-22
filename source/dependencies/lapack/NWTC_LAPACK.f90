@@ -303,15 +303,15 @@ MODULE NWTC_LAPACK
                                                           !!     TRANSB = 'N' or 'n', op( B ) = B.
                                                           !!     TRANSB = 'T' or 't', op( B ) = B**T.
 
-      REAL(SiKi)      ,intent(in   ) :: ALPHA             !! On entry, ALPHA specifies the scalar alpha.
-      REAL(SiKi)      ,intent(in   ) :: BETA              !! On entry, BETA specifies the scalar beta. When BETA is supplied as zero then C need not be set on input.
-      REAL(SiKi)      ,intent(in   ) :: A( :, : )         !! Matrix A
-      REAL(SiKi)      ,intent(in   ) :: B( :, : )         !! Matrix B
-      REAL(SiKi)      ,intent(inout) :: C( :, : )         !! Matrix C: Before entry, C must contain the matrix C, except when beta is zero, in which case C need not
+      REAL(SiKi)      ,intent(in   ) :: ALPHA             !< On entry, ALPHA specifies the scalar alpha.
+      REAL(SiKi)      ,intent(in   ) :: BETA              !< On entry, BETA specifies the scalar beta. When BETA is supplied as zero then C need not be set on input.
+      REAL(SiKi)      ,intent(in   ) :: A( :, : )         !< Matrix A
+      REAL(SiKi)      ,intent(in   ) :: B( :, : )         !< Matrix B
+      REAL(SiKi)      ,intent(inout) :: C( :, : )         !< Matrix C: Before entry, C must contain the matrix C, except when beta is zero, in which case C need not
                                                           !! be set on entry. On exit, the array C is overwritten by the m by n matrix ( alpha*op( A )*op( B ) + beta*C ).
 
-      INTEGER(IntKi),  intent(  out) :: ErrStat           !! Error level
-      CHARACTER(*),    intent(  out) :: ErrMsg            !! Message describing error
+      INTEGER(IntKi),  intent(  out) :: ErrStat           !< Error level
+      CHARACTER(*),    intent(  out) :: ErrMsg            !< Message describing error
                                                           
          ! local variables                                                                   
                                                                                                                                                                                                                   
@@ -898,7 +898,7 @@ MODULE NWTC_LAPACK
                                                           !!   order as their eigenvalues. If the j-th eigenvalue is real, then u(j) = VL(:,j), the j-th column of VL. If the j-th and
                                                           !!   (j+1)-th eigenvalues form a complex conjugate pair, then u(j) = VL(:,j)+i*VL(:,j+1) and u(j+1) = VL(:,j)-i*VL(:,j+1).
                                                           !!   Each eigenvector is scaled so the largest component has abs(real part)+abs(imag. part)=1. Not referenced if JOBVL = 'N'.
-      REAL(R8Ki)      ,intent(  out) :: VR( :, : )        !! dimension (LDVR,N). If JOBVR = 'V', the right eigenvectors v(j) are stored one after another in the columns of VR, in the same
+      REAL(R8Ki)      ,intent(  out) :: VR( :, : )        !< dimension (LDVR,N). If JOBVR = 'V', the right eigenvectors v(j) are stored one after another in the columns of VR, in the same
                                                           !!   order as their eigenvalues. If the j-th eigenvalue is real, then v(j) = VR(:,j), the j-th column of VR. If the j-th and
                                                           !!   (j+1)-th eigenvalues form a complex conjugate pair, then v(j) = VR(:,j)+i*VR(:,j+1) and v(j+1) = VR(:,j)-i*VR(:,j+1).
                                                           !!   Each eigenvector is scaled so the largest component has abs(real part)+abs(imag. part)=1. Not referenced if JOBVR = 'N'.
@@ -1134,7 +1134,7 @@ MODULE NWTC_LAPACK
                                                           !! leading N-by-N lower triangular part of A contains the lower triangular part of the matrix A, and the strictly upper
                                                           !! triangular part of A is not referenced.
                                                           !! On exit, if INFO = 0, the factor U or L from the Cholesky factorization A = U**T*U or A = L*L**T.
-      REAL(SiKi)      ,intent(inout) :: B( :, : )         !! On entry, the N-by-NRHS matrix of right hand side matrix B.  On exit, if INFO = 0, the N-by-NRHS solution matrix X.
+      REAL(SiKi)      ,intent(inout) :: B( :, : )         !< On entry, the N-by-NRHS matrix of right hand side matrix B.  On exit, if INFO = 0, the N-by-NRHS solution matrix X.
 
       INTEGER(IntKi),  intent(  out) :: ErrStat           !< Error level
       CHARACTER(*),    intent(  out) :: ErrMsg            !< Message describing error
