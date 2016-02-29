@@ -58,8 +58,7 @@ PROJECT_LOGO           = //nrel.gov/Shared/Wind/WindWeb/nwtc/doxygen/NREL-logo-s
 # entered, it will be relative to the location where doxygen was started. If
 # left blank the current directory will be used.
 
-#OUTPUT_DIRECTORY       = //nrel.gov/Shared/Wind/WindWeb/nwtc/doxygen
-OUTPUT_DIRECTORY       = ./Doxygen
+OUTPUT_DIRECTORY       = //nrel.gov/Shared/Wind/WindWeb/nwtc/doxygen/nwtc_library
 
 # If the CREATE_SUBDIRS tag is set to YES then doxygen will create 4096 sub-
 # directories (in 2 levels) under the output directory of each output format and
@@ -1192,7 +1191,7 @@ HTML_COLORSTYLE_GAMMA  = 82
 # The default value is: NO.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_TIMESTAMP         = NO
+HTML_TIMESTAMP         = YES
 
 # If the HTML_DYNAMIC_SECTIONS tag is set to YES then the generated HTML
 # documentation will contain sections that can be hidden and shown after the
@@ -1598,7 +1597,7 @@ SEARCHDATA_FILE        = searchdata.xml
 # projects and redirect the results back to the right project.
 # This tag requires that the tag SEARCHENGINE is set to YES.
 
-EXTERNAL_SEARCH_ID     =
+EXTERNAL_SEARCH_ID     = NWTC_Library
 
 # The EXTRA_SEARCH_MAPPINGS tag can be used to enable searching through doxygen
 # projects other than the one defined by this configuration file, but that are
