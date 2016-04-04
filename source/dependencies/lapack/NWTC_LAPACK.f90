@@ -6,8 +6,8 @@
 !! code to compile in double vs. single precision.   
 !
 !**********************************************************************************************************************************
-! File last committed: $Date: 2016-01-22 10:07:07 -0700 (Fri, 22 Jan 2016) $
-! (File) Revision #: $Rev: 358 $
+! File last committed: $Date: 2016-01-22 12:03:00 -0700 (Fri, 22 Jan 2016) $
+! (File) Revision #: $Rev: 361 $
 ! URL: $HeadURL: https://windsvn.nrel.gov/NWTC_Library/branches/NetLib/NWTC_source/NWTC_LAPACK.f90 $
 !**********************************************************************************************************************************
 MODULE NWTC_LAPACK
