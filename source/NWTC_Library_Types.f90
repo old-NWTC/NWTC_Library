@@ -32,29 +32,29 @@ USE SysSubs
 IMPLICIT NONE
 ! =========  ProgDesc  =======
   TYPE, PUBLIC :: ProgDesc
-    CHARACTER(99)  :: Name 
-    CHARACTER(99)  :: Ver 
-    CHARACTER(24)  :: Date 
+    CHARACTER(99)  :: Name      !< Name of the program or module [-]
+    CHARACTER(99)  :: Ver      !< Version number of the program or module [-]
+    CHARACTER(24)  :: Date      !< String containing date module was last updated [-]
   END TYPE ProgDesc
 ! =======================
 ! =========  FASTdataType  =======
   TYPE, PUBLIC :: FASTdataType
-    CHARACTER(1024)  :: File 
-    CHARACTER(1024)  :: Descr 
-    INTEGER(IntKi)  :: NumChans 
-    INTEGER(IntKi)  :: NumRecs 
-    REAL(DbKi)  :: TimeStep 
-    CHARACTER(20) , DIMENSION(:), ALLOCATABLE  :: ChanNames 
-    CHARACTER(20) , DIMENSION(:), ALLOCATABLE  :: ChanUnits 
-    REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Data 
+    CHARACTER(1024)  :: File      !< Name of the FAST-style binary file [-]
+    CHARACTER(1024)  :: Descr      !< String describing file [-]
+    INTEGER(IntKi)  :: NumChans      !< Number of output channels in this binary file (not including the time channel) [-]
+    INTEGER(IntKi)  :: NumRecs      !< Number of records (rows) of data in the file [-]
+    REAL(DbKi)  :: TimeStep      !< Time step for evenly-spaced data in the output file (when NumRecs is not allo [-]
+    CHARACTER(20) , DIMENSION(:), ALLOCATABLE  :: ChanNames      !< Strings describing the names of the channels from the binary file (including the time channel) [-]
+    CHARACTER(20) , DIMENSION(:), ALLOCATABLE  :: ChanUnits      !< Strings describing the units of the channels from the binary file (including the time channel) [-]
+    REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Data      !< numeric data (rows and columns) from the binary file, including the time channel [-]
   END TYPE FASTdataType
 ! =======================
 ! =========  OutParmType  =======
   TYPE, PUBLIC :: OutParmType
-    INTEGER(IntKi)  :: Indx 
-    CHARACTER(ChanLen)  :: Name 
-    CHARACTER(ChanLen)  :: Units 
-    INTEGER(IntKi)  :: SignM 
+    INTEGER(IntKi)  :: Indx      !< An index into AllOuts array where this channel is computed/stored [-]
+    CHARACTER(ChanLen)  :: Name      !< Name of the output channel [-]
+    CHARACTER(ChanLen)  :: Units      !< Units this channel is specified in [-]
+    INTEGER(IntKi)  :: SignM      !< Multiplier for output channel; usually -1 (minus) or 0 (invalid channel) [-]
   END TYPE OutParmType
 ! =======================
 ! =========  FileInfoType  =======
