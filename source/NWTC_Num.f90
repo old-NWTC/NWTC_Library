@@ -5169,7 +5169,7 @@ end function Rad2M180to180Deg
 
       BlankLine = ""
       CALL WrOver( BlankLine )  ! BlankLine contains MaxWrScrLen spaces
-      CALL WrOver ( ' Timestep: '//TRIM( Num2LStr( NINT( ZTime ) ) )//' of '//TRIM( Num2LStr( TMax ) )// &
+      CALL WrOver ( trim(DescStr)//' Timestep: '//TRIM( Num2LStr( NINT( ZTime ) ) )//' of '//TRIM( Num2LStr( TMax ) )// &
                     ' seconds. Estimated final completion at '//ETimeStr//'.'                             )
 
          ! Let's save this time as the previous time for the next call to the routine
