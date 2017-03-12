@@ -4299,14 +4299,12 @@ SUBROUTINE Create_Augmented_Ln2_Src_Mesh(Src, Dest, MeshMap, Dest_TYPE, ErrStat,
    Aug_Nnodes = Src%nnodes  ! number of nodes in the augmented mesh 
    Aug_NElem  = Temp_Ln2_Src%ElemTable(ELEMENT_LINE2)%nelem
 
-   ! loop through the destination elements:
+   ! loop through the destination elements (NOTE: for point elements, this is the same as looping over nodes):
    DO jElem = 1,dest%ElemTable(Dest_TYPE)%nelem
       
       IF ( Dest_TYPE == ELEMENT_LINE2 ) THEN
          p_eD =   dest%Position(:, dest%ElemTable(Dest_TYPE)%Elements(jElem)%ElemNodes(2)) &
                 - dest%Position(:, dest%ElemTable(Dest_TYPE)%Elements(jElem)%ElemNodes(1))
-      ELSE
-         p_eD =   dest%Position(:, dest%ElemTable(Dest_TYPE)%Elements(jElem)%ElemNodes(1))
       END IF
       
      
@@ -4319,6 +4317,7 @@ SUBROUTINE Create_Augmented_Ln2_Src_Mesh(Src, Dest, MeshMap, Dest_TYPE, ErrStat,
          p_eS =   Temp_Ln2_Src%Position(:, Temp_Ln2_Src%ElemTable(ELEMENT_LINE2)%Elements(iElem)%ElemNodes(2)) &
                 - Temp_Ln2_Src%Position(:, Temp_Ln2_Src%ElemTable(ELEMENT_LINE2)%Elements(iElem)%ElemNodes(1))
          
+         IF ( Dest_TYPE == ELEMENT_POINT ) p_eD = p_eS
          denom = DOT_PRODUCT( p_eD , p_eS )
             
   
@@ -4345,6 +4344,7 @@ SUBROUTINE Create_Augmented_Ln2_Src_Mesh(Src, Dest, MeshMap, Dest_TYPE, ErrStat,
                      
                                           
                   p_eS  = Src%Position(:, n2) - Src%Position(:, n1)
+                  IF ( Dest_TYPE == ELEMENT_POINT ) p_eD = p_eS
                   denom = DOT_PRODUCT( p_eD , p_eS )   ! we don't need to check that this is zero because it's just a shorter version of the temp Temp_Ln2_Src element
                   n1S_nD_vector =   dest%Position(:, dest%ElemTable(Dest_TYPE)%Elements(jElem)%ElemNodes(jNode)) &
                                    - Src%Position(:, n1 )
