@@ -457,8 +457,8 @@ SUBROUTINE Transfer_Line2_to_Point( Src, Dest, MeshMap, ErrStat, ErrMsg, SrcDisp
 
    TYPE(MeshType),         INTENT(IN   ) ::  Src      !< source mesh
    TYPE(MeshType),         INTENT(INOUT) ::  Dest     !< destination mesh
-   TYPE(MeshType),OPTIONAL,INTENT(IN   ) ::  SrcDisp  !< a "functional" sibling of the source mesh required for loads transfer; Src contains loads and SrcDisp contains TranslationDisp and Orientation
-   TYPE(MeshType),OPTIONAL,INTENT(IN   ) ::  DestDisp !< a "functional" sibling of the destination mesh required for loads transfer; Dest contains loads and DestDisp contains TranslationDisp and Orientation
+   TYPE(MeshType),OPTIONAL,INTENT(IN   ) ::  SrcDisp  !< a "functional" sibling of the source mesh required for loads transfer; Src contains loads and SrcDisp contains TranslationDisp and Orientaiton
+   TYPE(MeshType),OPTIONAL,INTENT(IN   ) ::  DestDisp !< a "functional" sibling of the destination mesh required for loads transfer; Dest contains loads and DestDisp contains TranslationDisp and Orientaiton
 
    TYPE(MeshMapType),      INTENT(INOUT) :: MeshMap   !< mapping data structure
 
@@ -1241,7 +1241,6 @@ SUBROUTINE Transfer_Motions_Line2_to_Point( Src, Dest, MeshMap, ErrStat, ErrMsg 
    REAL(DbKi)                :: FieldValue(3,2)                ! Temporary variable to store values for DCM interpolation
    REAL(DbKi)                :: RotationMatrixD(3,3)
    REAL(DbKi)                :: tensor_interp(3)
-   REAL(DbKi)                :: theta(1)
    
 
    ErrStat = ErrID_None
@@ -1795,7 +1794,9 @@ SUBROUTINE CreateMapping_ProjectToLine2(Mesh1, Mesh2, NodeMap, Mesh1_TYPE, ErrSt
 
 !   INTEGER(IntKi)                                 :: ErrStat2                       ! Error status of the operation
 !   CHARACTER(ErrMsgLen)                           :: ErrMsg2                        ! Error message if ErrStat2 /= ErrID_None
+#ifdef DEBUG_MESHMAPPING
    CHARACTER(200)                                 :: DebugFileName                  ! File name for debugging file
+#endif   
    CHARACTER(*), PARAMETER                        :: RoutineName = 'CreateMapping_ProjectToLine2' 
    
    
@@ -1820,8 +1821,8 @@ SUBROUTINE CreateMapping_ProjectToLine2(Mesh1, Mesh2, NodeMap, Mesh1_TYPE, ErrSt
    LOGICAL         :: found
    LOGICAL         :: on_element
    
-   INTEGER(IntKi)  :: Un               ! unit number for debugging
 #ifdef DEBUG_MESHMAPPING
+   INTEGER(IntKi)  :: Un               ! unit number for debugging
    REAL(ReKi)      :: closest_elem_position
    INTEGER(IntKi)  :: closest_elem
 #endif
@@ -3756,16 +3757,16 @@ END SUBROUTINE Transfer_Loads_Point_to_Line2
 !! \begin{bmatrix} M_{mi} & M_{f_{\times p}} & 0      & 0      \\
 !!                 0        & M_{mi}         & 0      & 0      \\
 !!                 0        & 0              & M_{li} & 0      \\
-!!                 M_{um}   & M_{tm}         & M_{fm} & M_{li} \\ \end{bmatrix} 
+!!                 M_{um}   & M_{tm}         & M_{fm} & M_{li} \\ \end{bmatrix}
 !! \left\{ \begin{matrix} \Delta\vec{u}^S \\  \Delta\vec{\theta}^S \\  \Delta\vec{F}^S \\   \Delta\vec{M}^S \end{matrix} \right\} \\ & =   
 !! \begin{bmatrix} I                                                         & 0 & 0                                                                                                        & 0        \\
 !!                 0                                                         & I & 0                                                                                                        & 0        \\
 !!                 0                                                         & 0 &  \begin{bmatrix} M_{li}^{DL} \end{bmatrix}^{-1}                                                          & 0        \\
-!!                -\begin{bmatrix} M_{li}^{DL} \end{bmatrix}^{-1}M_{um}^{DL} & 0 & -\begin{bmatrix} M_{li}^{DL} \end{bmatrix}^{-1}M_{fm}^{DL}\begin{bmatrix} M_{li}^{DL} \end{bmatrix}^{-1} & \begin{bmatrix} M_{li}^{DL} \end{bmatrix}^{-1} \\ \end{bmatrix}  
+!!                -\begin{bmatrix} M_{li}^{DL} \end{bmatrix}^{-1}M_{um}^{DL} & 0 & -\begin{bmatrix} M_{li}^{DL} \end{bmatrix}^{-1}M_{fm}^{DL}\begin{bmatrix} M_{li}^{DL} \end{bmatrix}^{-1} & \begin{bmatrix} M_{li}^{DL} \end{bmatrix}^{-1} \\ \end{bmatrix}
 !! \begin{bmatrix} M_{mi}   & M_{f_{\times p}} & 0        & 0        \\
 !!                 0        & M_{mi}           & 0        & 0        \\
 !!                 0        & 0                & M_{li}^D & 0        \\
-!!                 0        & M_{tm}^D         & M_{fm}^D & M_{li}^D \\ \end{bmatrix}  
+!!                 0        & M_{tm}^D         & M_{fm}^D & M_{li}^D \\ \end{bmatrix}
 !! \left\{ \begin{matrix} \Delta\vec{u}^S \\  \Delta\vec{\theta}^S \\  \Delta\vec{F}^S \\   \Delta\vec{M}^S \end{matrix} \right\}
 !! \end{aligned}
 !! \f}
